@@ -1,0 +1,166 @@
+COMPLETE PIPELINE EXECUTION STEPS (END-TO-END)
+From ZERO → PR → Auto Slack → Merge → Cloud Build → Cloud Run → Slack Success/Failure
+ PHASE 1 — GitHub Setup (One-Time Only)
+ Create a Service Account in GCP
+
+Go to GCP → IAM → Service Accounts → Create:
+
+Name: github-actions-sa
+
+Roles (assign all below):
+
+Cloud Build Editor
+Artifact Registry Writer
+Cloud Run Admin
+Storage Admin
+Service Account User
+IAM Service Account Token Creator
+
+ Create JSON Key for the SA
+
+Service Account → Keys → Create Key → JSON
+
+Download file → open it → copy contents.
+
+ Add Secrets in GitHub Repository
+
+Go to:
+ GitHub Repo → Settings → Secrets & Variables → Actions
+
+Add the following:
+
+Secret Name	Value
+GCP_SA_KEY	Entire JSON key
+SLACK_WEBHOOK_URL	Slack webhook URL
+Install Google Cloud SDK GitHub Actions
+
+(No manual work. The YAML uses it.)
+
+ PHASE 2 — Slack Setup
+ Create Slack Incoming Webhook
+
+Slack → Apps → Incoming Webhooks
+
+Steps:
+
+Choose Slack channel → Add Webhook
+
+Copy Webhook URL
+
+Save it to GitHub secret: SLACK_WEBHOOK_URL
+
+ PHASE 3 — Create the GitHub Workflow YAML
+
+Go to repo:
+
+repo/.github/workflows/day38-full-pipeline.yml
+
+
+Paste the final YAML (we already built this).
+
+Commit it to day38-pr-test.
+
+ PHASE 4 — Branching & PR Flow
+ Create a feature branch
+git checkout -b day38-pr-test
+
+
+Make some changes → commit → push.
+
+ Create a Pull Request
+
+From GitHub UI:
+PR: day38-pr-test → main
+
+ When PR is created:
+
+GitHub workflow triggers
+
+Slack gets:
+
+PR Triggered!
+
+ PHASE 5 — PR Review Workflow
+
+Nothing to do.
+
+PR builds (if any future validation added)
+
+Slack is notified
+
+You review PR manually
+
+ PHASE 6 — Merge PR to Main
+ Click “Merge PR”
+
+Once PR is approved → Merge.
+
+ This triggers the deploy_after_merge job.
+
+ PHASE 7 — Deployment Pipeline Steps
+
+When PR merges → GitHub Actions triggers:
+
+ Build Docker Image Using Cloud Build
+
+Command executed:
+
+gcloud builds submit . --tag gcr.io/project-id/day38-image:latest --async
+
+
+Because it's --async, Cloud Build logs do not break the pipeline.
+
+Extractor finds:
+
+Build ID
+
+Build Logs URL
+
+ Deploy to Cloud Run
+
+Command:
+
+gcloud run deploy day38-service --image gcr.io/... --region us-central1
+
+
+Cloud Run deploys your service & assigns a URL:
+
+Example:
+
+https://day38-service-541531337654.us-central1.run.app
+
+ PHASE 8 — Slack Notifications
+Slack — Deployment Success Message
+
+Sent with:
+
+Commit SHA
+
+Cloud Build Logs URL
+
+Cloud Run Service URL
+
+Example:
+
+ Deployment Successful!
+ Service: https://day38-service...
+ Commit: 3e423bc
+ Build Logs: https://console.cloud.google.com/cloud-build/builds/...
+
+Slack — Deployment Failed Message
+
+If ANY step fails, Slack gets failure alert:
+
+Deployment FAILED!
+ Commit: 3e423bc
+ Build Logs: https://console.cloud.google.com/cloud-build/builds/...
+
+ PHASE 9 — Validate Deployment
+Test URL
+
+Open the Cloud Run URL from Slack:
+
+https://day38-service-xxxxxx.us-central1.run.app
+
+
+You should see your Day38 application.

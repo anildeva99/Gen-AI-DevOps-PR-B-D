@@ -1,0 +1,29 @@
+name: Day40 AI Orchestrator
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Enter instruction: pr review | test | build | deploy | slack | full"
+        required: true
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Stage
+        id: selector
+        run: |
+          python3 Day40/ai_stage_selector.py "${{ github.event.inputs.prompt }}" > stage.json
+          cat stage.json
+
+      - name: Read Stage
+        id: readstage
+        run: echo "stage=$(jq -r '.stage' stage.json)" >> $GITHUB_OUTPUT
+
+      - name: Trigger Stage Runner
+        run: |
+          gh workflow run day40-stages.yml -f stage=${{ steps.readstage.outputs.stage }}

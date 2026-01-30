@@ -1,0 +1,283 @@
+AIOps Alert Pipeline on Azure — End-to-End Implementation
+
+ Node Exporter → Prometheus → Alertmanager → Flask AI Engine → Slack
+
+
+
+Perfect for:
+✔ Student training
+✔ AIOps workshops
+✔ Cloud DevOps demos
+✔ Azure Production-like setups
+
+ 1. Architecture Overview
+┌──────────────────────────┐
+│     target-vm (Azure)    │
+│   Node Exporter :9100    │
+│   Private IP: 10.0.0.4   │
+└─────────────┬────────────┘
+              │ Metrics
+              ▼
+┌──────────────────────────┐
+│   monitoring-vm (Azure)  │
+│ Prometheus :9090         │
+│ Alertmanager :9093       │
+│ Flask AI Engine :5000    │
+│ Private IP: 10.0.0.5     │
+└─────────────┬────────────┘
+              │ Webhook
+              ▼
+        Slack Incoming Webhook
+
+ 2. Create Resource Group
+az group create --name aiops-rg --location eastus
+
+ 3. Create VNet + Subnet
+az network vnet create \
+  --name aiops-vnet \
+  --resource-group aiops-rg \
+  --address-prefix 10.0.0.0/16 \
+  --subnet-name aiops-subnet \
+  --subnet-prefix 10.0.1.0/24
+
+ 4. Create Network Security Group (NSG)
+az network nsg create \
+  --resource-group aiops-rg \
+  --name aiops-nsg
+
+ 5. Add NSG Rules (Prometheus, Alertmanager, Flask, Node Exporter)
+az network nsg rule create --nsg-name aiops-nsg --resource-group aiops-rg \
+  --name allow-prometheus --priority 100 \
+  --protocol tcp --destination-port-range 9090 --access allow
+
+az network nsg rule create --nsg-name aiops-nsg --resource-group aiops-rg \
+  --name allow-alertmanager --priority 110 \
+  --protocol tcp --destination-port-range 9093 --access allow
+
+az network nsg rule create --nsg-name aiops-nsg --resource-group aiops-rg \
+  --name allow-flask --priority 120 \
+  --protocol tcp --destination-port-range 5000 --access allow
+
+az network nsg rule create --nsg-name aiops-nsg --resource-group aiops-rg \
+  --name allow-nodeexporter --priority 130 \
+  --protocol tcp --destination-port-range 9100 --access allow
+
+ 6. Create Public IPs
+az network public-ip create \
+  --resource-group aiops-rg \
+  --name monitoring-ip
+
+az network public-ip create \
+  --resource-group aiops-rg \
+  --name target-ip
+
+7. Create NICs (Attach NSG)
+Monitoring VM NIC
+az network nic create --resource-group aiops-rg \
+  --name monitoring-nic \
+  --vnet-name aiops-vnet --subnet aiops-subnet \
+  --network-security-group aiops-nsg \
+  --public-ip-address monitoring-ip
+
+Target VM NIC
+az network nic create --resource-group aiops-rg \
+  --name target-nic \
+  --vnet-name aiops-vnet --subnet aiops-subnet \
+  --network-security-group aiops-nsg \
+  --public-ip-address target-ip
+
+ 8. Create Azure Virtual Machines
+Monitoring VM
+az vm create \
+  --resource-group aiops-rg \
+  --name monitoring-vm \
+  --image Ubuntu2204 \
+  --admin-username azureuser \
+  --generate-ssh-keys \
+  --nics monitoring-nic
+
+Target VM
+az vm create \
+  --resource-group aiops-rg \
+  --name target-vm \
+  --image Ubuntu2204 \
+  --admin-username azureuser \
+  --generate-ssh-keys \
+  --nics target-nic
+
+ 9. SSH into VMs (Azure CLI)
+Monitoring VM
+az ssh vm --name monitoring-vm --resource-group aiops-rg
+
+Target VM
+az ssh vm --name target-vm --resource-group aiops-rg
+
+ 10. Install Node Exporter (on target-vm)
+sudo apt update -y
+wget https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz
+tar xvf node_exporter-1.6.1.linux-amd64.tar.gz
+cd node_exporter-1.6.1.linux-amd64
+./node_exporter &
+
+
+Verify:
+
+http://<TARGET-VM-PUBLIC-IP>:9100/metrics
+
+11. Install Docker + Python on monitoring-vm
+sudo apt update -y
+sudo apt install -y docker.io docker-compose python3-venv
+
+
+Create workspace:
+
+mkdir -p ~/monitoring
+cd ~/monitoring
+
+12. Configure Prometheus
+nano ~/monitoring/prometheus.yml
+
+
+Paste:
+
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['10.0.1.4:9100']    # target-vm PRIVATE IP
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['localhost:9093']
+rule_files:
+  - "alert_rules.yml"
+
+
+Replace private IP if different.
+
+ 13. Add Alert Rules
+nano ~/monitoring/alert_rules.yml
+
+
+Paste:
+
+groups:
+- name: node_alerts
+  rules:
+  - alert: NodeExporterDown
+    expr: up{job="node_exporter"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Node Exporter Down"
+      description: "Node exporter on {{ $labels.instance }} is DOWN."
+
+14. Configure Alertmanager
+nano ~/monitoring/alertmanager.yml
+
+
+Paste:
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: aiops-bot
+
+receivers:
+  - name: aiops-bot
+    webhook_configs:
+      - url: 'http://10.0.1.5:5000/alert'   # monitoring-vm PRIVATE IP
+
+ 15. Run Prometheus & Alertmanager
+Prometheus
+sudo docker run -d --name prometheus \
+  --network host \
+  -v ~/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml \
+  -v ~/monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml \
+  prom/prometheus
+
+Alertmanager
+sudo docker run -d --name alertmanager \
+  --network host \
+  -v ~/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml \
+  prom/alertmanager \
+  --config.file=/etc/alertmanager/alertmanager.yml
+16. Create Slack Incoming Webhook
+
+Slack → Apps → Incoming Webhooks → Add to Slack
+Copy the webhook url:
+
+https://hooks.slack.com/services/AAA/BBB/CCC
+
+17. Create Flask AI Webhook (monitoring-vm)
+nano ~/monitoring/ai_anomaly_insights.py
+
+
+Paste:
+
+from flask import Flask, request, jsonify
+import requests, json
+
+app = Flask(__name__)
+
+SLACK_WEBHOOK_URL = "<YOUR-SLACK-WEBHOOK-URL>"
+
+@app.route('/alert', methods=['POST'])
+def alert_handler():
+    data = request.json
+    print("Received Alert:", data)
+
+    msg = f"*Prometheus Alert Triggered!*\n```{json.dumps(data, indent=2)}```"
+    requests.post(SLACK_WEBHOOK_URL, json={"text": msg})
+
+    return jsonify({"status": "received"})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+
+ 18. Run Flask in Background
+python3 -m venv ~/flaskenv
+~/flaskenv/bin/pip install flask requests
+
+sudo fuser -k 5000/tcp || true
+nohup ~/flaskenv/bin/python3 ai_anomaly_insights.py > ai_alerts.log 2>&1 &
+
+
+Logs:
+
+tail -f ~/monitoring/ai_alerts.log
+
+ 19. Trigger Alert
+
+SSH to target VM:
+
+az ssh vm --name target-vm --resource-group aiops-rg
+
+
+Stop node exporter:
+
+pkill node_exporter
+
+ 20. Validate Alerts
+Prometheus UI
+http://<MONITORING-PUBLIC-IP>:9090/alerts
+
+Alertmanager UI
+http://<MONITORING-PUBLIC-IP>:9093
+
+Flask Logs
+tail -f ~/monitoring/ai_alerts.log
+
+Slack Channel
+
+Alert message will appear instantly.
+
+ SUCCESS — Full AIOps Pipeline Running on Azure
+
+You now have a production-like Azure pipeline:
+
+Node Exporter → Prometheus → Alertmanager → Flask AI Engine → Slack

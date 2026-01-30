@@ -1,0 +1,226 @@
+
+What is RAG (Retrieval-Augmented Generation)?
+RAG = Search + Context + LLM Answer
+Instead of asking the LLM to answer only from its training data:
+
+
+We retrieve relevant documents from our own DevOps knowledge base
+
+
+Inject that content into the prompt
+
+
+The LLM answers grounded on your data
+
+
+Why RAG is critical for DevOps agents
+
+
+Cloud errors change frequently
+
+
+Internal runbooks are private
+
+
+Best practices differ per org
+
+
+LLM hallucination is dangerous in infra
+
+
+ RAG = Accuracy + Control + Trust
+
+ High-Level Architecture You Implemented
+User (Browser / API)
+        ↓
+ADK DevOps Agent
+        ↓
+RAG Tool (search)
+        ↓
+DevOps Docs (local → embeddings → Firestore)
+        ↓
+Relevant chunks returned
+        ↓
+LLM (Gemini 2.0 Flash)
+        ↓
+Final grounded answer + sources
+
+
+ Step-by-Step: How We Built RAG (Practically)
+ Step 1: Define the DevOps Knowledge Base
+You manually curated DevOps knowledge (this is important).
+adkrag/rag/docs/
+├── cloudrun/
+│   └── cloudrun_troubleshooting.txt
+├── kubernetes/
+│   └── crashloop.txt
+├── ci-cd/
+│   └── cicd_failures.txt
+├── terraform/
+│   └── terraform_best_practices.txt
+└── observability/
+    └── observability.txt
+
+ Each file = real-world DevOps experience
+
+Step 2: Convert Docs → Chunks
+Why chunking?
+
+
+LLM embeddings work best on small text blocks
+
+
+Enables precise retrieval
+
+
+Each document was:
+
+
+Read
+
+
+Split into logical chunks
+
+
+Stored individually
+
+
+
+ Step 3: Create Embeddings (Vectorization)
+Each chunk was converted into numerical vectors using Vertex AI embeddings.
+Conceptually:
+"Cloud Run containers must listen on PORT 8080"
+→ [0.021, -0.057, 0.039, ...]
+
+These vectors capture semantic meaning, not keywords.
+
+ Step 4: Store Chunks + Vectors in Firestore
+You created:
+Firestore
+└── devops_rag_chunks (collection)
+    ├── doc_id
+    │   ├── text
+    │   ├── embedding
+    │   ├── source
+
+ Screenshot confirms data exists
+ This is your vector database
+
+ Step 5: RAG Search Logic (Critical)
+When user asks:
+
+"Why is my Cloud Run service failing to start?"
+
+Your RAG tool does:
+
+
+Convert question → embedding
+
+
+Compare question embedding with stored vectors
+
+
+Find most similar chunks
+
+
+Return top-K results
+
+
+ This is semantic search, not keyword search.
+
+ Step 6: RAG Tool (devops_rag_search)
+This tool:
+
+
+Reads Firestore
+
+
+Computes similarity
+
+
+Returns matching chunks with source paths
+
+
+You tested it directly:
+devops_rag_search("Why is my Cloud Run service failing to start?")
+
+ Output showed:
+
+
+Cloud Run troubleshooting
+
+
+Kubernetes crashloop
+
+
+CI/CD failures
+
+
+
+ Step 7: Connect RAG Tool to ADK Agent
+This is the big ADK advantage.
+Instead of hardcoding:
+
+
+You registered RAG as a tool
+
+
+ADK decides:
+
+
+When to call RAG
+
+
+How to inject results into prompt
+
+
+How to compose final answer
+
+
+ This is agentic behavior, not simple prompt calls.
+
+ Step 8: Prompt Flow Inside ADK
+Internally, the prompt becomes something like:
+System Prompt:
+You are a DevOps expert agent.
+
+Context (from RAG):
+- Cloud Run containers must listen on PORT 8080...
+- Kubernetes CrashLoopBackOff means...
+
+User Question:
+Why is my Cloud Run service failing to start?
+
+ LLM answers only using retrieved context
+
+ Step 9: Browser UI Integration
+Your HTML UI:
+
+
+Sends user question to /ask
+
+
+Backend calls ADK agent
+
+
+Agent calls RAG tool
+
+
+Answer returned with sources
+
+
+What you saw in UI:
+
+
+Answer
+
+
+Source files
+
+
+Zero hallucination
+
+
+
+
+

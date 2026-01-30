@@ -1,0 +1,220 @@
+DevOps RAG Agent Demo (ADK-Style) – Team Documentation
+ Objective
+
+Build a simple, reliable DevOps RAG agent that:
+
+Reads DevOps troubleshooting docs
+
+Retrieves relevant content (RAG)
+
+Responds to user queries in a chat-style CLI
+
+Is suitable for 5–7 minute classroom / team demo
+
+Avoids unstable SDK/runtime issues
+
+ Architecture (Simplified)
+User Question
+   ↓
+RAG Retrieval (local docs)
+   ↓
+Agent Reasoning (prompt grounding)
+   ↓
+Final Answer (grounded, deterministic)
+
+
+ We intentionally do NOT call ADK runtime methods
+
+This is an ADK-style agent, not a hosted ADK workflow.
+
+ Project Structure
+adk-rag-demo/
+│
+├── rag/
+│   ├── docs/
+│   │   └── cloudrun/
+│   │       └── cloudrun_troubleshooting.txt
+│   │
+│   ├── indexer/
+│   │   └── index_rag.py
+│   │
+│   └── search/
+│       └── search_rag.py
+│
+├── tools/
+│   └── rag_tool.py
+│
+├── app/
+│   └── chat.py
+│
+└── agent/
+    └── __init__.py   (empty, for structure)
+
+🪜 Step-by-Step Execution Guide
+ Step 1: Create Project Folder
+cd ~
+mkdir adk-rag-demo
+cd adk-rag-demo
+
+ Step 2: Create RAG Folder Structure
+mkdir -p rag/docs/cloudrun
+mkdir -p rag/indexer
+mkdir -p rag/search
+mkdir -p tools app agent
+touch tools/__init__.py agent/__init__.py
+
+Step 3: Create DevOps Documentation (Knowledge Base)
+
+📄 File: rag/docs/cloudrun/cloudrun_troubleshooting.txt
+
+Cloud Run containers must listen on the PORT environment variable (default 8080).
+
+Common startup failure reasons:
+- Application not binding to PORT
+- Hardcoded ports like 3000 or 5000
+- Container crashes during startup
+- Missing environment variables
+- Startup timeout exceeded
+
+Always check Cloud Run revision logs first.
+
+ Step 4: RAG Indexer (Document Loader)
+
+📄 File: rag/indexer/index_rag.py
+
+import os
+
+DOCS_DIR = "rag/docs"
+
+def load_documents():
+    docs = []
+    for root, _, files in os.walk(DOCS_DIR):
+        for file in files:
+            if file.endswith(".txt"):
+                path = os.path.join(root, file)
+                with open(path, "r") as f:
+                    docs.append({
+                        "source": path.replace("rag/", ""),
+                        "text": f.read().strip()
+                    })
+    return docs
+
+if __name__ == "__main__":
+    documents = load_documents()
+    print(f"Loaded {len(documents)} documents")
+    for d in documents:
+        print(f"SOURCE: {d['source']}")
+
+
+▶ Run
+
+python rag/indexer/index_rag.py
+
+
+✔ Output:
+
+Loaded 1 documents
+SOURCE: docs/cloudrun/cloudrun_troubleshooting.txt
+
+ Step 5: RAG Search (Simple Keyword Retrieval)
+
+📄 File: rag/search/search_rag.py
+
+import os
+
+DOCS_DIR = "rag/docs"
+
+def search_rag(query: str):
+    results = []
+    for root, _, files in os.walk(DOCS_DIR):
+        for file in files:
+            if file.endswith(".txt"):
+                path = os.path.join(root, file)
+                with open(path, "r") as f:
+                    text = f.read()
+                    if any(word.lower() in text.lower() for word in query.split()):
+                        results.append({
+                            "source": path.replace("rag/", ""),
+                            "text": text.strip()
+                        })
+    return results
+
+ Step 6: RAG Tool (Agent-Callable Tool)
+
+📄 File: tools/rag_tool.py
+
+from rag.search.search_rag import search_rag
+
+def devops_rag_search(query: str) -> str:
+    results = search_rag(query)
+    if not results:
+        return "No relevant documentation found in RAG."
+
+    return "\n\n".join(
+        f"Source: {r['source']}\n{r['text']}"
+        for r in results
+    )
+
+ Step 7: Chat Application (Agent-Style Reasoning)
+
+📄 File: app/chat.py
+
+from tools.rag_tool import devops_rag_search
+
+SYSTEM_PROMPT = """
+You are a Senior DevOps Engineer AI Agent.
+Answer ONLY using the provided documentation.
+If no documentation is found, say you don't know.
+Be concise and practical.
+"""
+
+print("🤖 DevOps ADK RAG Agent (type 'exit' to quit)\n")
+
+while True:
+    query = input("You: ").strip()
+    if query.lower() in ("exit", "quit"):
+        break
+
+    rag_context = devops_rag_search(query)
+
+    if "No relevant documentation" in rag_context:
+        print("\nAgent: I don’t have relevant documentation for this.\n")
+        continue
+
+    final_prompt = f"""
+{SYSTEM_PROMPT}
+
+Documentation:
+{rag_context}
+
+Question:
+{query}
+
+Answer:
+"""
+
+    # Deterministic response for demo
+    print("\nAgent:")
+    print(rag_context)
+    print()
+
+ Step 8: Run the Chat Agent
+cd app
+export PYTHONPATH=..
+python chat.py
+
+ Final Output (Expected)
+You: Why is my Cloud Run service failing to start?
+
+Agent:
+Source: docs/cloudrun/cloudrun_troubleshooting.txt
+Cloud Run containers must listen on the PORT environment variable (default 8080).
+
+Common startup failure reasons:
+- Application not binding to PORT
+- Hardcoded ports like 3000 or 5000
+- Container crashes during startup
+- Missing environment variables
+- Startup timeout exceeded
+
+Always check Cloud Run revision logs first.

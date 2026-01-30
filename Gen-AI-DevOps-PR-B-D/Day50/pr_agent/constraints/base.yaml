@@ -1,0 +1,13 @@
+rules:
+  - id: no-hardcoded-secrets
+    description: "Do not commit secrets, tokens, passwords."
+    severity: high
+
+  - id: no-public-ip-exposure
+    description: "Avoid exposing public IPs, open firewall rules, or 0.0.0.0/0 unless justified."
+    severity: medium
+
+  - id: must-have-tests
+    description: "If code changes include logic updates, ensure tests or validation steps exist."
+    severity: low
+

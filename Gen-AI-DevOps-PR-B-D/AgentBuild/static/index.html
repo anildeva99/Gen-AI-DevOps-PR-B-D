@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Day40 Agent – Chat UI</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .message-box { margin-top: 20px; padding: 15px; background: #eee; }
+    </style>
+</head>
+<body>
+
+<h1>🚀 Day40 Agent – Chat UI</h1>
+
+<input type="text" id="userInput" placeholder="Say something..." style="width:300px;">
+<button onclick="sendMessage()">Send</button>
+
+<div id="responseBox" class="message-box">Waiting...</div>
+
+<script>
+async function sendMessage() {
+    const msg = document.getElementById("userInput").value;
+
+    if (!msg.trim()) {
+        document.getElementById("responseBox").innerText = "No input provided";
+        return;
+    }
+
+    const response = await fetch("/predict", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ message: msg })
+    });
+
+    const data = await response.json();
+    document.getElementById("responseBox").innerText = data.response;
+}
+</script>
+
+</body>
+</html>
+

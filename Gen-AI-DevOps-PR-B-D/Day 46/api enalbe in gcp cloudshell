@@ -1,0 +1,68 @@
+Step 1: Create folder + go inside
+mkdir gcp-api-demo
+cd gcp-api-demo
+
+ Step 2: Create app.py (same Flask API)
+nano app.py
+
+
+Paste this:
+
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+SERVICE_STATUS = {
+    "cloudrun": "running",
+    "github_pipeline": "failed"
+}
+
+@app.route("/status")
+def status():
+    return jsonify(SERVICE_STATUS)
+
+@app.route("/status/<service_name>")
+def status_service(service_name):
+    return jsonify({
+        "service": service_name,
+        "status": SERVICE_STATUS.get(service_name, "unknown")
+    })
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=5000)
+
+
+Save:
+
+Ctrl+O, Enter
+
+Ctrl+X
+
+ Step 3: Install Flask (only if needed)
+pip3 install flask
+
+ Step 4: Run the API (same as AWS)
+python3 app.py
+
+
+You will see:
+
+Running on http://127.0.0.1:5000
+
+
+ Keep this running.
+
+ Step 5: Open a NEW Cloud Shell terminal tab
+
+Click the + icon (new terminal)
+
+Then run:
+
+Test 1
+curl http://127.0.0.1:5000/status
+
+Test 2
+curl http://127.0.0.1:5000/status/github_pipeline
+
+Test 3
+curl http://127.0.0.1:5000/status/cloudrun

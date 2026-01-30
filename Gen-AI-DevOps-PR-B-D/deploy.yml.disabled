@@ -1,0 +1,43 @@
+name: Deploy Flask App to GCP VM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          pip install -r Day34_GitHub_Actions_Deployment/requirements.txt
+
+      - name: Zip application files
+        run: zip -r app.zip Day34_GitHub_Actions_Deployment
+
+      - name: Upload to GCP VM via SCP
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.GCP_VM_IP }}
+          username: ${{ secrets.GCP_VM_USER }}
+          key: ${{ secrets.GCP_SSH_KEY }}
+          source: "app.zip"
+          target: "/home/${{ secrets.GCP_VM_USER }}/deploy/"
+
+      - name: SSH and Restart Flask App
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.GCP_VM_IP }}
+          username: ${{ secrets.GCP_VM_USER }}
+          key: ${{ secrets.GCP_SSH_KEY }}
+          script: |
+            cd ~/deploy/
+            unzip -o app.zip
+            pkill -f app.py || true
+            nohup python3 Day34_GitHub_Actions_Deployment/app.py > app.log 2>&1 &
+

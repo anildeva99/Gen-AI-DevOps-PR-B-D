@@ -1,0 +1,46 @@
+name: Day40 Stage Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: "Pipeline Stage"
+        required: true
+
+jobs:
+
+  pr_review:
+    if: ${{ github.event.inputs.stage == 'PR_REVIEW' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running PR Review stage..."
+
+  tests:
+    if: ${{ github.event.inputs.stage == 'TESTS' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running Tests stage..."
+
+  build:
+    if: ${{ github.event.inputs.stage == 'BUILD' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running Build stage..."
+
+  deploy:
+    if: ${{ github.event.inputs.stage == 'DEPLOY' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running Deploy stage..."
+
+  slack_notify:
+    if: ${{ github.event.inputs.stage == 'SLACK_NOTIFY' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Sending Slack notification..."
+
+  full_pipeline:
+    if: ${{ github.event.inputs.stage == 'FULL' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running FULL pipeline..."

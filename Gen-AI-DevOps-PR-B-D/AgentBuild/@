@@ -1,0 +1,16 @@
+from vertexai.generative_models import FunctionDeclaration
+
+def say_hello(name: str):
+    return f"Hello {name}, I am your Day40 agent!"
+
+sample_tool = FunctionDeclaration(
+    name="say_hello",
+    description="Greets the user",
+    parameters={
+        "name": {
+            "type": "string",
+            "description": "Name of the user"
+        }
+    },
+)
+

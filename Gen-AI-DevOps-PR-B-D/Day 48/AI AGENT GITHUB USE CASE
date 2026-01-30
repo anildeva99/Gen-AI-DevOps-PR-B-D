@@ -1,0 +1,284 @@
+DevOps AI Agent – Full Hands-On Lab Guide
+
+(ADK + RAG + DB + API + GitHub Actions + Slack + Cloud Run)
+
+What Students Will Build (Outcome)
+
+By the end of these labs, students will build:
+
+A Web-based DevOps AI Agent deployed on Cloud Run that:
+
+Answers DevOps questions using RAG
+
+Reads pipeline history from DB
+
+Queries live status via API
+
+Triggers GitHub Actions pipelines
+
+Reviews PRs using AI
+
+Deploys builds
+
+Sends notifications to Slack
+
+High-Level Architecture (Explain to Students)
+User (Browser / Curl)
+        |
+        v
+Cloud Run (ADK Agent API)
+        |
+        |-- RAG → DevOps Docs (TXT / GCS / Repo)
+        |
+        |-- DB → SQLite / Cloud SQL
+        |
+        |-- API → Status & Control APIs
+        |
+        |-- GitHub API → PR Review + Workflow Dispatch
+        |
+        |-- Slack Webhook → Notifications
+
+ Final Repo Structure (Very Important)
+Gen-AI-DevOps/
+└── day48-adk-devops-agent/
+    ├── agent/
+    │   ├── devops_agent.py
+    │   ├── github_agent.py
+    │   ├── db_agent.py
+    │   └── server.py
+    ├── rag/
+    │   ├── docs/
+    │   │   └── cloudrun_troubleshooting.txt
+    │   ├── indexer/
+    │   │   └── index_rag.py
+    │   └── search/
+    │       └── search_rag.py
+    ├── db/
+    │   ├── schema.sql
+    │   ├── db_client.py
+    │   └── seed_data.py
+    ├── api/
+    │   └── app.py
+    ├── tools/
+    │   ├── rag_tool.py
+    │   ├── db_tool.py
+    │   └── github_tool.py
+    ├── app.py
+    ├── Dockerfile
+    ├── requirements.txt
+    └── README.md
+
+LAB 1 – Environment Setup (Cloud Shell)
+mkdir day48-adk-devops-agent
+cd day48-adk-devops-agent
+
+python3 -m venv .venv
+source .venv/bin/activate
+
+ LAB 2 – RAG (Retrieval-Augmented Generation)
+2.1 Create Docs
+mkdir -p rag/docs/cloudrun
+
+
+rag/docs/cloudrun/cloudrun_troubleshooting.txt
+
+Cloud Run containers must listen on PORT (8080).
+
+Common failures:
+- App not binding to PORT
+- Hardcoded ports (3000/5000)
+- Missing env vars
+- Startup timeout
+
+Check Cloud Run revision logs first.
+
+2.2 RAG Indexer
+
+rag/indexer/index_rag.py
+
+import os
+
+DOCS_DIR = "rag/docs"
+
+def load_docs():
+    docs = []
+    for root, _, files in os.walk(DOCS_DIR):
+        for f in files:
+            if f.endswith(".txt"):
+                path = os.path.join(root, f)
+                with open(path) as fh:
+                    docs.append({
+                        "source": path.replace("rag/", ""),
+                        "text": fh.read()
+                    })
+    return docs
+
+if __name__ == "__main__":
+    docs = load_docs()
+    print(f"Loaded {len(docs)} docs")
+
+2.3 RAG Search
+
+rag/search/search_rag.py
+
+from rag.indexer.index_rag import load_docs
+
+DOCS = load_docs()
+
+def search_rag(query):
+    return [d for d in DOCS if any(w in d["text"].lower() for w in query.lower().split())]
+
+2.4 RAG Tool
+
+tools/rag_tool.py
+
+from rag.search.search_rag import search_rag
+
+def devops_rag_search(query):
+    results = search_rag(query)
+    if not results:
+        return "No relevant documentation found."
+    return "\n\n".join(
+        f"Source: {r['source']}\n{r['text']}" for r in results
+    )
+
+ LAB 3 – Database (Pipeline History)
+3.1 Schema
+
+db/schema.sql
+
+CREATE TABLE pipeline_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  repo TEXT,
+  branch TEXT,
+  status TEXT,
+  failure_reason TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+sqlite3 devops.db < db/schema.sql
+
+3.2 DB Client
+
+db/db_client.py
+
+import sqlite3
+
+def get_connection():
+    return sqlite3.connect("devops.db", check_same_thread=False)
+
+3.3 DB Tool
+
+tools/db_tool.py
+
+from db.db_client import get_connection
+
+def fetch_last_pipeline():
+    conn = get_connection()
+    cur = conn.cursor()
+    cur.execute("""
+      SELECT repo, branch, status, failure_reason, created_at
+      FROM pipeline_history
+      ORDER BY created_at DESC LIMIT 1
+    """)
+    row = cur.fetchone()
+    return row
+
+LAB 4 – API Layer
+
+api/app.py
+
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+@app.route("/status/<pipeline>")
+def status(pipeline):
+    return jsonify({"pipeline": pipeline, "status": "failed"})
+
+if __name__ == "__main__":
+    app.run(port=8080)
+
+LAB 5 – ADK Agent (Core)
+
+agent/devops_agent.py
+
+from tools.rag_tool import devops_rag_search
+
+def answer(prompt):
+    return devops_rag_search(prompt)
+
+ LAB 6 – Web Server (Cloud Run Ready)
+
+app.py
+
+from flask import Flask, request, jsonify
+from agent.devops_agent import answer
+
+app = Flask(__name__)
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    prompt = request.json["prompt"]
+    return jsonify({"answer": answer(prompt)})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
+
+ LAB 7 – Docker & Cloud Run
+
+Dockerfile
+
+FROM python:3.10
+WORKDIR /app
+COPY . .
+RUN pip install -r requirements.txt
+CMD ["python", "app.py"]
+
+gcloud builds submit --tag us-central1-docker.pkg.dev/PROJECT/agents/devops-agent
+gcloud run deploy devops-agent --image us-central1-docker.pkg.dev/PROJECT/agents/devops-agent --allow-unauthenticated
+
+LAB 8 – GitHub Actions (Pipeline + PR Review)
+
+.github/workflows/devops-agent.yml
+
+name: AI DevOps Pipeline
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  ai-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: AI PR Review
+        run: echo "AI reviewing PR..."
+
+  build:
+    needs: ai-review
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Building app..."
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Deploying app..."
+
+ LAB 9 – Slack Notification
+
+Add to workflow:
+
+- name: Notify Slack
+  run: |
+    curl -X POST -H 'Content-type: application/json' \
+    --data '{"text":"Pipeline completed"}' \
+    ${{ secrets.SLACK_WEBHOOK }}
+
+ LAB 10 – Final Test
+curl -X POST https://CLOUD_RUN_URL/chat \
+-H "Content-Type: application/json" \
+-d '{"prompt":"Why is my Cloud Run service failing to start?"}'

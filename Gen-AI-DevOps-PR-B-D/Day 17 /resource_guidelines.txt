@@ -1,0 +1,58 @@
+# ⚙️ Kubernetes Resource Management Guidelines
+
+1. 🎯 Always define CPU and memory requests and limits:
+   - Requests ensure your Pod gets enough resources to run.
+   - Limits prevent runaway resource consumption.
+   - Example:
+     ```yaml
+     resources:
+       requests:
+         cpu: "200m"
+         memory: "256Mi"
+       limits:
+         cpu: "500m"
+         memory: "512Mi"
+     ```
+
+2. 🧠 Use appropriate sizing:
+   - Start small and monitor usage with tools like Prometheus and Metrics Server.
+   - Adjust based on real-world metrics rather than guessing.
+
+3. 🧪 Resource Quotas and Limits:
+   - Use `ResourceQuota` and `LimitRange` to enforce constraints at the namespace level.
+
+4. 📊 Autoscaling:
+   - Combine proper requests/limits with `HorizontalPodAutoscaler` for dynamic scaling.
+   - Example:
+     ```yaml
+     apiVersion: autoscaling/v2
+     kind: HorizontalPodAutoscaler
+     spec:
+       minReplicas: 2
+       maxReplicas: 10
+       metrics:
+         - type: Resource
+           resource:
+             name: cpu
+             target:
+               type: Utilization
+               averageUtilization: 75
+     ```
+
+5. 🛑 Avoid “No Resource Requests” Anti-pattern:
+   - Pods without requests can lead to unpredictable scheduling and instability.
+
+6. 🧰 Resource Classes:
+   - Use resource classes or node pools to align workloads with appropriate hardware (e.g., GPU, high-memory).
+
+7. 📈 Monitor and Tune:
+   - Continuously monitor usage using Prometheus, Grafana, or Cloud Monitoring.
+   - Regularly update resource limits to align with evolving workloads.
+
+8. 🛡️ Use Pod Priority and QoS Classes:
+   - Pods with requests but no limits are classified as **Burstable**.
+   - Pods with both requests and limits equal are **Guaranteed**.
+   - Use these intelligently to manage cluster resources.
+
+9. 🔄 Plan for Overhead:
+   - Factor in Kubernetes daemon overhead and system pods when allocating resources.

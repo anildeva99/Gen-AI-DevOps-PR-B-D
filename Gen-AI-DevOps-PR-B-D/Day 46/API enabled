@@ -1,0 +1,134 @@
+What is an API? 
+API = Application Programming Interface
+
+In plain English:
+
+An API is a way for one system to talk to another system using rules.
+
+Instead of clicking buttons in UI, programs talk using APIs.
+
+Everyday analogy (best for students)
+ Restaurant example
+
+You (User) → Customer
+
+Kitchen → Backend system
+
+Menu → API
+
+Order → Request
+
+Food → Response
+
+You don’t enter the kitchen, you order through the menu (API).
+
+In DevOps terms
+You want to do	API used
+Check service status	GET
+Create resource	POST
+Update config	PUT / PATCH
+Delete resource	DELETE
+API Methods (VERY IMPORTANT)
+
+These 4 are core:
+
+Method	Meaning	Example
+GET	Read data	Get service status
+POST	Create data	Trigger pipeline
+PUT / PATCH	Update data	Scale app
+DELETE	Remove data	Delete deployment
+🧪 Basic API Lab (AWS CloudShell friendly)
+
+We’ll build a simple API locally using Python.
+No AWS permissions required. Works in AWS CloudShell.
+
+ Step 1: Open AWS CloudShell
+
+You should see:
+
+user@cloudshell $
+
+ Step 2: Install Python API framework
+
+AWS CloudShell already has Python. Install Flask:
+
+pip install flask
+
+Step 3: Create a simple API file
+nano app.py
+
+
+copy and paste the below code
+
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+# In-memory data (like a mini DB)
+services = {
+    "cloudrun": "running",
+    "github_pipeline": "failed"
+}
+
+@app.route("/status", methods=["GET"])
+def get_status():
+    return jsonify(services)
+
+@app.route("/status/<service>", methods=["GET"])
+def get_service_status(service):
+    return jsonify({
+        "service": service,
+        "status": services.get(service, "unknown")
+    })
+
+@app.route("/restart/<service>", methods=["POST"])
+def restart_service(service):
+    services[service] = "running"
+    return jsonify({
+        "message": f"{service} restarted successfully"
+    })
+
+@app.route("/delete/<service>", methods=["DELETE"])
+def delete_service(service):
+    services.pop(service, None)
+    return jsonify({
+        "message": f"{service} deleted"
+    })
+
+if __name__ == "__main__":
+    app.run(port=5000)
+
+
+Save and exit.
+
+ Step 4: Start the API server
+python app.py
+
+
+You should see:
+
+Running on http://127.0.0.1:5000
+
+ Step 5: Test APIs (REAL hands-on)
+
+Open another CloudShell tab or background the process.
+
+ GET – Read data
+curl http://127.0.0.1:5000/status
+
+
+Output:
+
+{
+  "cloudrun": "running",
+  "github_pipeline": "failed"
+}
+
+ GET – Single service
+curl http://127.0.0.1:5000/status/github_pipeline
+
+POST – Restart service
+curl -X POST http://127.0.0.1:5000/restart/github_pipeline
+
+ DELETE – Delete service
+curl -X DELETE http://127.0.0.1:5000/delete/cloudrun

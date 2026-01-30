@@ -1,0 +1,47 @@
+Agent in AI
+
+An AI Agent is built on top of an LLM (like Gemini, GPT-4).
+
+It has reasoning + autonomy + can use tools.
+
+Purpose: perform cognitive tasks.
+
+Example:
+
+A Financial Advisor Agent that queries BigQuery + suggests portfolios.
+
+A DevOps AI Agent that reads logs + suggests fixes.
+
+Key Features:
+
+Uses an LLM for reasoning.
+
+Can call external APIs/tools (e.g., databases, shells, Slack, Jira).
+
+Can maintain memory and perform multi-step tasks.
+
+Focus: automation of knowledge work.
+
+ Think of it as a smart worker that plans & acts.
+
+
+----------------------------------------------------------------------------------------------------------------------------------
+Agent in Azure (Self-Hosted Agent for DevOps Pipelines)
+
+In Azure DevOps, an agent is a compute resource (VM, container, machine) that runs your CI/CD pipeline jobs.
+
+Purpose: execute build/test/deploy tasks.
+
+Example:
+
+You run a pipeline in Azure DevOps → the self-hosted agent on your EC2 or VM runs the scripts (Terraform, Docker build, etc.).
+
+Key Features:
+
+Executes YAML pipeline steps (build, test, deploy).
+
+Can be Microsoft-hosted (managed by Azure) or Self-hosted (your VM).
+
+Focus: automation of software delivery.
+
+💡 Think of it as a runner/worker machine for DevOps tasks.

@@ -1,0 +1,31 @@
+mkdir -p ~/rag_comparison/docs
+cd ~/rag_comparison
+
+
+
+cd ~/rag_comparison
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r requirements.txt
+
+
+export MISTRAL_API_KEY="your_mistral_api_key_here"
+
+
+echo $MISTRAL_API_KEY
+
+
+
+python3 compare_rag.py
+
+--------------------------
+
+Generate a Kubernetes deployment for a Flask web app with 3 replicas, resource limits, and non-root user.
+
+
+
+Generate a Kubernetes deployment for a payment-processing microservice with autoscaling, probes, ConfigMaps, and secrets.
+
+
+

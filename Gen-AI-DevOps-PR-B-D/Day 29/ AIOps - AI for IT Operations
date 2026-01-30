@@ -1,0 +1,79 @@
+AIOps (Artificial Intelligence for IT Operations) uses machine learning (ML) and large language models (LLMs) to monitor, analyze, correlate, and 
+automate IT operations tasks — like incident detection, root cause analysis (RCA), anomaly detection, and self-healing.
+
+| Layer                             | Function                                  | Example Tools                                               |
+| --------------------------------- | ----------------------------------------- | ----------------------------------------------------------- |
+|  Data Collection**           | Collect metrics, logs, traces, and events | Prometheus, Grafana, Loki, ELK, New Relic, Cloud Logging    |
+|  Data Storage & Processing** | Store and preprocess data streams         | BigQuery, ElasticSearch, InfluxDB, Kafka                    |
+|  AI / ML Analytics**         | Detect anomalies, predict failures        | Python (Isolation Forest, LSTM), Vertex AI, OpenAI API      |
+|  Correlation & Insights**    | Combine multiple signals into insights    | LangChain, Gemini 2.5 Flash, or Mistral                     |
+|  Automation / Response**     | Execute remediation workflows             | Cloud Functions, Cloud Run, Jenkins, ServiceNow, Slack Bots |
+
+
+AIOps (Artificial Intelligence for IT Operations) refers to the application of AI, ML, and data analytics to automate and enhance IT operations such as monitoring,
+event correlation, anomaly detection, root cause analysis, and incident remediation.
+
+It integrates observability (logs, metrics, traces) with intelligent analytics to provide proactive insights and automated responses — reducing downtime and improving reliability.
+
+---------------------------------------------------------------------
+
+[Node Exporter / App Logs] --> [Prometheus + Loki] --> [AI Anomaly Engine]
+                               ↑                       ↓
+                          [Promtail]          [AI Log Insights API]
+                               ↓                       ↓
+                        [Grafana AI Dashboard]  <---  [Alertmanager]
+
+
+Data sources: VMs, Kubernetes nodes, applications.
+
+AI modules: detect anomalies, compute severity scores, correlate events.
+
+Visualization: Grafana shows real-time anomaly trends and RCA insights.
+Example Use Case
+
+Scenario: CPU usage spikes across multiple nodes at 3 AM.
+
+Prometheus detects metric anomalies.
+
+AI Anomaly Insights API computes anomaly score = 0.92.
+
+Grafana Dashboard highlights anomaly and root cause (e.g., failed cron job).
+
+Alertmanager triggers Cloud Function to restart impacted service.
+Result → Outage prevented automatically.
+
+Business Impact
+
+ 60–80% reduction in Mean Time to Detect (MTTD)
+ 40–60% faster Mean Time to Resolve (MTTR)
+ Automated early detection of performance degradation
+ Reduced alert noise through AI correlation
+ Proactive capacity planning and predictive scaling
+
+-------------------------------------------------------
+
+| Layer               | Technology                                                       |
+| ------------------- | ---------------------------------------------------------------- |
+| **Data Collection** | Prometheus, Loki, Node Exporter, Promtail                        |
+| **AI/ML Models**    | Python (FastAPI, scikit-learn, TensorFlow, or Gemini/OpenAI API) |
+| **Automation**      | Cloud Functions / Cloud Run + Alertmanager Webhooks              |
+| **Visualization**   | Grafana with custom AI anomaly panels                            |
+| **Storage**         | BigQuery / Cloud Storage for historical analytics                |
+
+
+
+Example Use case :
+
+
+Scenario: CPU usage spikes across multiple nodes at 3 AM.
+
+Prometheus detects metric anomalies.
+
+AI Anomaly Insights API computes anomaly score = 0.92.
+
+Grafana Dashboard highlights anomaly and root cause (e.g., failed cron job).
+
+Alertmanager triggers Cloud Function to restart impacted service.
+Result → Outage prevented automatically.
+
+

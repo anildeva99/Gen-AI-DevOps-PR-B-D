@@ -1,0 +1,5 @@
+mistralai
+langchain
+langchain-community
+sentence-transformers
+faiss-cpu

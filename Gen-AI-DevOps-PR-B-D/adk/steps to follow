@@ -1,0 +1,318 @@
+Steps to execute
+
+PHASE 1 — Enable Required GCP Services
+
+Run once in Cloud Shell:
+
+gcloud config set project testadi-459816
+
+
+Enable APIs:
+
+gcloud services enable \
+  aiplatform.googleapis.com \
+  generativelanguage.googleapis.com \
+  run.googleapis.com \
+  artifactregistry.googleapis.com \
+  cloudbuild.googleapis.com \
+  iam.googleapis.com
+
+
+Verify:
+
+gcloud services list --enabled | grep -E "aiplatform|run|artifact|build"
+
+PHASE 2 — Create Service Account for Agent
+ Create service account
+gcloud iam service-accounts create agent-sa \
+  --display-name="ADK Agent Service Account"
+
+
+Service account email:
+
+agent-sa@testadi-459816.iam.gserviceaccount.com
+ Assign required roles
+gcloud projects add-iam-policy-binding testadi-459816 \
+  --member="serviceAccount:agent-sa@testadi-459816.iam.gserviceaccount.com" \
+  --role="roles/aiplatform.user"
+
+gcloud projects add-iam-policy-binding testadi-459816 \
+  --member="serviceAccount:agent-sa@testadi-459816.iam.gserviceaccount.com" \
+  --role="roles/run.invoker"
+
+gcloud projects add-iam-policy-binding testadi-459816 \
+  --member="serviceAccount:agent-sa@testadi-459816.iam.gserviceaccount.com" \
+  --role="roles/logging.logWriter"
+
+gcloud projects add-iam-policy-binding testadi-459816 \
+  --member="serviceAccount:agent-sa@testadi-459816.iam.gserviceaccount.com" \
+  --role="roles/artifactregistry.reader"
+
+
+ These are minimum + correct roles for ADK agents.
+
+ PHASE 3 — Verify Vertex AI Model Access (CRITICAL)
+
+Important concept
+gcloud ai models list will show 0 models for Gemini — this is NORMAL.
+
+Gemini models are publisher models, not project models.
+
+ Correct way to verify access (Cloud Shell Python)
+python3
+
+
+Inside Python REPL:
+
+import vertexai
+from vertexai.generative_models import GenerativeModel
+
+vertexai.init(project="testadi-459816", location="us-central1")
+
+model = GenerativeModel("models/gemini-2.0-flash")
+response = model.generate_content("Say hi")
+print(response.text)
+
+
+Expected output:
+
+Hi there! How can I help you today?
+
+
+ If this works → Vertex AI access is CONFIRMED
+
+ PHASE 4 — Create ADK Project Folder
+
+From Cloud Shell:
+
+mkdir adk
+cd adk
+
+
+Your conceptual structure (no code explanation here):
+
+adk/
+ ├── agent/               # agent logic (ADK style)
+ ├── tools/               # tools for agent
+ ├── system_prompt.txt    # system instructions
+ ├── server.py            # API entry (Cloud Run)
+ ├── Dockerfile
+ ├── requirements.txt
+
+ PHASE 5 — Build Container Image (Cloud Build)
+
+Create Artifact Registry repo (once):
+
+gcloud artifacts repositories create agents \
+  --repository-format=docker \
+  --location=us-central1 \
+  --description="Agent images"
+
+
+Build image:
+
+gcloud builds submit \
+  --tag us-central1-docker.pkg.dev/testadi-459816/agents/adk-agent:latest
+
+
+Verify image:
+
+gcloud artifacts docker images list us-central1-docker.pkg.dev/testadi-459816/agents
+
+ PHASE 6 — Deploy ADK Agent to Cloud Run
+gcloud run deploy adk-agent \
+  --image us-central1-docker.pkg.dev/testadi-459816/agents/adk-agent:latest \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --service-account agent-sa@testadi-459816.iam.gserviceaccount.com \
+  --port 8080
+
+
+Output:
+
+Service URL: https://adk-agent-xxxxx.us-central1.run.app
+
+
+
+Diff between ADK and Regular Flask App development 
+
+--------------------------------------------------
+
+ADK (Agent Development Kit) is worth using when you want to move from “an app that calls Gemini” to “an agent that can reliably do work.” 
+A plain Flask app can invoke a model, but it doesn’t give you the structure you need for tool use, 
+multi-step reasoning, guardrails, and production patterns. Here’s what that means in practical terms.
+
+
+---------------------------------------------------------
+
+ADK helps you build an “agent” as a system: prompt + policy + tools + orchestration + observability. The big advantages are:
+
+1) Real tool calling (structured, not “string parsing”)
+
+A DevOps agent shouldn’t “pretend” to run commands. It should call tools like:
+
+get_cloud_run_logs(service)
+
+read_github_pr(repo, pr_id)
+
+terraform_plan(diff)
+
+check_alertmanager(alert_id)
+
+query_bigquery(sql)
+
+With ADK-style patterns, tool inputs/outputs are structured (JSON / schemas), so:
+
+You don’t rely on fragile “extract from text” hacks
+
+You can validate arguments
+
+You can enforce permissions and rate limits per tool
+
+This is the difference between “chatbot” and “automation agent”.
+
+2) Agent orchestration (multi-step execution)
+
+DevOps tasks are rarely one-step:
+
+“Investigate why Cloud Run failed”
+
+Pull revision logs
+
+Identify root cause
+
+Recommend fix
+
+Generate patch or command set
+
+Validate with a dry-run / re-check logs
+
+ADK gives you a clean way to represent and execute these multi-step flows, instead of dumping everything into one prompt.
+
+3) System prompt + policies as first-class citizens
+
+In a DevOps agent, the “rules” matter:
+
+Don’t output secrets
+
+Don’t propose destructive commands unless asked
+
+Always show commands with explanation
+
+Require confirmation before “apply” / “delete”
+
+Follow your org standards (naming, tagging, regions, environments)
+
+ADK encourages keeping these as system instructions + policies, not scattered across endpoints.
+
+4) Better reliability (retries, timeouts, error handling patterns)
+
+Production agents need patterns like:
+
+Retry tool calls on transient failures
+
+Timeout long operations
+
+Fallback to a simpler model if needed
+
+Handle partial tool failures (“logs available but metrics not”)
+
+Without ADK, you build these ad-hoc in Flask. With ADK patterns, you build once and reuse.
+
+5) Observability & debuggability
+
+When your agent fails, you need to know:
+
+Which tool was called?
+
+With what arguments?
+
+Which step failed?
+
+What did the model decide and why?
+
+ADK-style architecture makes it natural to log:
+
+Tool call traces
+
+Step-by-step decisions
+
+Request IDs / correlation IDs
+
+Structured outputs
+
+This is huge for DevOps agents because debugging is the main job.
+
+6) Separation of concerns (clean project structure)
+
+ADK pushes you toward a clean structure:
+
+agent/ = agent logic
+
+tools/ = integrations (GitHub, GCP, Terraform, etc.)
+
+system_prompt.txt = behavior contract
+
+server.py = transport (Cloud Run API)
+
+So your “agent brain” is not mixed with your “web server plumbing”.
+
+7) Easier to scale to multi-agent later
+
+Once you go beyond one agent, you’ll want:
+
+Incident agent (triage)
+
+CI/CD agent (pipelines)
+
+IaC agent (Terraform)
+
+Security agent (IAM review)
+
+ADK-style design makes it easier to orchestrate specialist agents, because each agent/tool is modular.
+
+When you should definitely use ADK
+
+Use ADK when you need any of these:
+
+Tool calling (APIs, scripts, cloud operations)
+
+Guardrails / policies
+
+Multi-step workflows
+
+Long-running tasks
+
+Auditing & production logs
+
+Multi-agent setup
+
+Enterprise-style maintainability
+
+When Flask-only is enough
+
+Flask-only is fine when:
+
+It’s a demo / PoC
+
+You only do Q&A (no tools)
+
+You don’t need structured output
+
+You’re okay with occasional hallucination risk
+
+What ADK gives you specifically for a DevOps agent
+
+A DevOps agent needs to:
+
+Read logs, metrics, traces
+
+Suggest safe commands
+
+Generate CI/CD configs
+
+Validate changes
+
+Work with repos/issues
+
+Explain “why” + “how to fix”

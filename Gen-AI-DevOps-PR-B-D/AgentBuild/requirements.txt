@@ -1,0 +1,4 @@
+Flask==3.0.0
+google-cloud-aiplatform==1.71.1
+vertexai==1.71.1
+

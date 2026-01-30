@@ -1,0 +1,55 @@
+
+
+What is AIOps (AI for IT Operations)
+
+AIOps combines AI + ML + Automation to enhance and
+automate traditional IT Operations such as:
+
+Monitoring
+
+Incident Detection & Root Cause Analysis
+
+Capacity Planning
+
+Performance Optimization
+
+Automated Remediation
+
+It ingests logs, metrics, traces, and events from multiple tools (Prometheus, Stackdriver, Azure Monitor, ELK, etc.),
+applies machine learning to detect patterns or anomalies, and uses LLMs (like Gemini or GPT-4) to explain insights or trigger automated workflows.
+
+AIOps =
+
+Data + AI + Automation
+
+Layer	Function
+Data Layer	Collect logs, metrics, traces (Prometheus, Cloud Logging, Datadog, etc.)
+AI/ML Layer	Detect anomalies, predict failures, classify incidents
+Automation Layer	Trigger alerts, run remediation scripts, create tickets, or scale infra
+
+------------------------------------------------------------------------------------------------------
+   [VMs / Containers / Apps]
+              │
+              ▼
+   ┌────────────────────────────┐
+   │ Monitoring Tools (Prometheus, Grafana) │
+   └────────────────────────────┘
+              │
+              ▼
+   ┌────────────────────────────┐
+   │  AIOps Engine              │
+   │  • Anomaly Detection (ML)  │
+   │  • Log Analysis (LLM)      │
+   │  • Predictive Alerts       │
+   └────────────────────────────┘
+              │
+              ▼
+   ┌────────────────────────────┐
+   │ Automated Response (e.g. Cloud Function, Webhook, Slack, Jira) │
+   └────────────────────────────┘
+
+
+
+-------------------------------------------------------------------------------------
+
+

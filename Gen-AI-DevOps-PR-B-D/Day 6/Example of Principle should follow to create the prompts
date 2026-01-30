@@ -1,0 +1,43 @@
+Principles of Structured Prompting for DevOps::
+
+Role Definition: Tell the LLM what role to play (e.g., “You are a DevOps engineer…”).
+
+Context: Provide environment details (cloud provider, OS, tools, pipeline stage).
+
+Task Instruction: Be explicit about what you want (e.g., “Generate a Jenkinsfile for…”).
+
+Constraints: Add limits (e.g., “use YAML syntax, keep it under 50 lines, explain inline”).
+
+Output Format: Specify JSON/YAML/code block/explanation.
+
+Validation Step: Ask the model to double-check correctness/security.
+
+
+Use Case : Jenkins CI → Docker → ECR → EKS (Helm)
+
+
+Role Definition:
+You are a senior DevOps engineer.
+
+Context:
+- Cloud: AWS
+- CI: Jenkins (declarative pipeline, agents with Docker)
+- App: Java Maven service
+- Registry: Amazon ECR
+- Orchestrator: EKS (kubectl + Helm)
+- Secrets: stored in Jenkins credentials, IAM via role assumption
+
+Task Instruction:
+Generate a Jenkinsfile to: (1) build & test with Maven, (2) build Docker image, (3) tag & push to ECR, (4) deploy to EKS using a Helm chart named 'svc-chart' with values for image tag and replicas.
+
+Constraints:
+- Declarative pipeline with stages: Checkout, Build, Test, DockerBuild, Push, Deploy
+- Use environment variables for ECR repo, AWS region, IMAGE_TAG from git commit
+- No hard-coded secrets; use Jenkins credentialsId
+- Keep pipeline under ~80 lines and add brief inline comments for key steps
+
+Output Format:
+Return only the Jenkinsfile in a single fenced groovy code block (no extra prose).
+
+Validation Step:
+Before finalizing, self-check: (a) Jenkins syntax validity, (b) ECR login/push steps, (c) kubectl/Helm context selection for the right cluster/namespace, (d) no secrets printed in logs, (e) failure on any non-zero command.

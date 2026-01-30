@@ -1,0 +1,136 @@
+Role & Context Setting
+
+Give the LLM a persona and environment to reduce ambiguity.
+
+Example:
+“You are a Senior DevOps Architect. Assume AWS with Terraform and Kubernetes.”
+
+Why: Makes responses more accurate, domain-specific, and professional.
+
+2. Instruction Structuring (Clear, Layered Prompts)
+
+Break the prompt into task → constraints → format.
+
+Example:
+
+Task: Write a Jenkinsfile to deploy a Node.js app  
+Constraints: Use Docker Hub, namespace=dev  
+Format: Output only Groovy code inside ```groovy``` blocks
+
+
+Why: Clear structure = predictable outputs.
+
+3. Parameterization (Dynamic Prompts)
+
+Use placeholders like {app_type}, {cloud}, {namespace} → fill them programmatically.
+
+Example:
+
+Generate Terraform code for {cloud} to create a {instance_type} VM in {region}.
+
+
+Why: Makes prompts reusable & automatable in agents.
+
+4. Few-Shot Learning (Examples in Prompt)
+
+Provide input → output examples inside the prompt.
+
+Example (Monitoring rule):
+
+Example:
+Input: Alert when CPU > 80% for 5m
+Output:
+alert: HighCPUUsage
+expr: avg(rate(node_cpu_seconds_total[5m])) > 0.8
+
+
+Why: Models learn your style & format quickly.
+
+5. Chain-of-Thought (Reasoning Prompts)
+
+Ask the LLM to think step by step.
+
+Example:
+“Explain step by step how you will create the Kubernetes Deployment, then output only the YAML.”
+
+Why: Better logical accuracy for multi-step tasks.
+
+6. Self-Consistency / Self-Checking
+
+Ask the model to validate its own output.
+
+Example:
+“Write a Helm chart for Nginx. Then check if all required fields (apiVersion, kind, metadata, spec) exist.”
+
+Why: Reduces hallucinations, catches missing configs.
+
+7. Output Control (Formats, Tokens, Guardrails)
+
+Force the LLM to respond in strict formats (YAML, JSON, Markdown).
+
+Example:
+
+Respond ONLY in JSON:
+{
+  "deployment": "...",
+  "service": "..."
+}
+
+
+Why: Easy to parse → can plug into pipelines, APIs, or IaC directly.
+
+8. Prompt Chaining & Orchestration
+
+Instead of one big prompt → use multiple small, linked prompts.
+
+Example:
+
+Prompt A: Generate Terraform code.
+
+Prompt B: Validate against security rules.
+
+Prompt C: Optimize for cost.
+
+Why: Makes workflows modular and easier to debug.
+
+9. Meta-Prompts (Prompts about Prompts)
+
+LLMs can help you generate or refine prompts.
+
+Example:
+“Rewrite my prompt to ensure Terraform code is secure and modular.”
+
+Why: Bootstraps better prompt design.
+
+10. RAG & Grounding (Facts + Prompts)
+
+Use retrieval-augmented generation (RAG) to inject real data.
+
+Example:
+“Using the following Jenkins pipeline stored in GitHub, suggest improvements for CI/CD security.”
+
+Why: Keeps outputs grounded in your real DevOps environment.
+
+Putting It All Together
+
+----- Advanced Prompt Engineering = systematic design of prompts using:
+
+Role setting
+
+Clear structure
+
+Dynamic placeholders
+
+Examples (few-shot)
+
+Reasoning steps (CoT)
+
+Validation/self-checks
+
+Strict formats
+
+Chaining/orchestration
+
+Meta-prompts
+
+Grounding with data (RAG)

@@ -1,0 +1,22 @@
+How to Write structured prompts  DevOps use ::
+
+
+writing structured prompts for DevOps use cases means giving the LLM (like Gemini, GPT, etc.) clear, consistent, and reusable instructions so it can generate reliable outputs (scripts, pipelines, configs, troubleshooting steps) for real-world DevOps tasks.
+
+Here’s how you can approach it:
+
+1. Core Structure of a DevOps Prompt
+
+A structured DevOps prompt usually has these parts:
+
+Role/Context – Tell the LLM what it is acting as.
+“ DevOps engineer working with AWS, Kubernetes, and Jenkins.”
+
+Task – Define exactly what you want.
+“Generate a Jenkins pipeline YAML for building a Docker image and deploying to Kubernetes.”
+
+Constraints – Add requirements or boundaries.
+“Use Docker Hub for the image, Kubernetes deployment should run on namespace dev. Keep it minimal with comments.”
+
+Format – Specify the output structure.
+“Respond only with YAML, inside triple backticks, no explanations.”

@@ -1,0 +1,169 @@
+Target VM → exposes system metrics via Node Exporter
+
+Monitoring VM → runs Prometheus + Grafana
+
+Grafana dashboard → looks exactly like your uploaded screenshots
+
+
+
+SECTION 1 — Create Target VM (in GCP)
+gcloud compute instances create target-vm \
+  --zone=us-central1-a \
+  --machine-type=e2-medium \
+  --tags=http-server \
+  --image-family=debian-12 \
+  --image-project=debian-cloud
+
+ SECTION 2 — Install Node Exporter (on target-vm)
+# SSH into target-vm
+gcloud compute ssh target-vm --zone=us-central1-a
+
+# Install Docker
+sudo apt update -y
+sudo apt install -y docker.io
+sudo systemctl enable docker
+sudo systemctl start docker
+
+# Run Node Exporter container
+sudo docker run -d \
+  --name node-exporter \
+  --restart always \
+  -p 9100:9100 prom/node-exporter
+
+
+ Verify
+
+curl http://localhost:9100/metrics | head
+
+
+You’ll see Prometheus-formatted metrics.
+
+ SECTION 3 — Find Target VM Internal IP
+
+From Cloud Shell:
+
+gcloud compute instances describe target-vm \
+  --zone=us-central1-a \
+  --format='get(networkInterfaces[0].networkIP)'
+
+
+Example → 10.128.0.16
+
+Keep that value for the Prometheus config.
+
+ SECTION 4 — Create Monitoring VM (Prometheus + Grafana)
+gcloud compute instances create monitoring-vm \
+  --zone=us-central1-a \
+  --machine-type=e2-medium \
+  --tags=http-server \
+  --image-family=debian-12 \
+  --image-project=debian-cloud
+
+
+SSH into it:
+
+gcloud compute ssh monitoring-vm --zone=us-central1-a
+
+ SECTION 5 — Install Base Packages
+sudo apt update -y
+sudo apt install -y wget curl git unzip adduser libfontconfig1
+
+ SECTION 6 — Install Prometheus
+wget https://github.com/prometheus/prometheus/releases/download/v2.53.1/prometheus-2.53.1.linux-amd64.tar.gz
+tar xvf prometheus-2.53.1.linux-amd64.tar.gz
+cd prometheus-2.53.1.linux-amd64
+
+ SECTION 7 — Configure Prometheus
+sudo nano prometheus.yml
+
+
+Paste this (YAML):
+
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['10.128.0.16:9100']   # replace with your target-vm INTERNAL IP
+
+
+Save → Ctrl + O, Enter, Ctrl + X
+
+ SECTION 8 — Run Prometheus
+nohup ./prometheus --config.file=prometheus.yml --web.listen-address=":9090" &
+
+
+ Verify:
+
+curl http://localhost:9090
+
+
+Open in browser:
+
+http://<monitoring-vm-external-ip>:9090/targets
+
+
+You should see both prometheus and node_exporter as “UP”.
+
+ SECTION 9 — Install Grafana
+wget https://dl.grafana.com/enterprise/release/grafana-enterprise_11.2.0_amd64.deb
+sudo apt install -y musl
+sudo dpkg -i grafana-enterprise_11.2.0_amd64.deb
+sudo apt --fix-broken install -y
+sudo systemctl enable grafana-server
+sudo systemctl start grafana-server
+
+
+ Check:
+
+sudo systemctl status grafana-server
+
+
+Should show active (running).
+
+ SECTION 10 — Open Grafana & Add Prometheus Data Source
+
+Browser →
+
+http://<monitoring-vm-external-ip>:3000
+
+
+Default login → admin / admin → set new password.
+
+ Add Data Source → Prometheus
+
+URL: http://localhost:9090
+
+
+Click Save & Test →  “Data source is working”.
+
+ SECTION 11 — Import Node Exporter Dashboard
+
+Grafana → + → Import
+
+In “Import via grafana.com”, enter:
+
+1860
+
+
+
+Click Load
+
+Select your Prometheus data source
+
+Click Import
+
+ You’ll get a dashboard like the screenshot you shared (CPU, Memory, Disk, Network metrics).
+
+ SECTION 12 — Firewall Rules (GCP)
+
+Allow Prometheus & Grafana ports from Cloud Shell:
+
+gcloud compute firewall-rules create allow-monitoring \
+  --allow=tcp:9090,tcp:9100,tcp:3000 \
+  --target-tags=http-server

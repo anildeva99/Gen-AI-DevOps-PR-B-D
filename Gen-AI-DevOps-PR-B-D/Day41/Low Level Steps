@@ -1,0 +1,137 @@
+ Low Level Steps (Hands-On Implementation Steps)
+
+
+ LOW LEVEL DESIGN (LLD) STEPS TO BUILD A GCP AI AGENT
+ PHASE 1 — GCP Setup
+1. Create a project
+gcloud projects create my-ai-agent-project
+gcloud config set project my-ai-agent-project
+
+2. Enable required APIs
+gcloud services enable aiplatform.googleapis.com run.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com
+
+3. Create a Service Account
+gcloud iam service-accounts create ai-agent-sa
+
+4. Grant permissions
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member=serviceAccount:ai-agent-sa@PROJECT_ID.iam.gserviceaccount.com \
+  --role=roles/aiplatform.user
+
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member=serviceAccount:ai-agent-sa@PROJECT_ID.iam.gserviceaccount.com \
+  --role=roles/run.admin
+
+gcloud projects add-iam-policy-binding PROJECT_ID \
+  --member=serviceAccount:ai-agent-sa@PROJECT_ID.iam.gserviceaccount.com \
+  --role=roles/artifactregistry.reader
+
+ PHASE 2 — Vector DB (RAG Setup)
+1. Create project folders
+mkdir ai-agent
+cd ai-agent
+mkdir app rag_data chroma_db
+
+2. Install dependencies
+
+FastAPI
+
+LangChain
+
+LangChain-Google-VertexAI
+
+Vertex AI
+
+Chroma
+
+pip install fastapi uvicorn langchain langchain-google-vertexai google-cloud-aiplatform chromadb
+
+3. Prepare data
+
+Put any .txt, .md, .yml, .json, .pdf (after text extraction) inside rag_data/.
+
+4. Build RAG index
+
+Run script to create embeddings using Gemini:
+
+python -m app.rag_ingest
+
+ PHASE 3 — Build Agent Logic Using LangChain
+1. Define Tools
+
+Examples:
+
+GitHub workflow trigger
+
+BigQuery query
+
+Slack message sender
+
+File search
+
+2. Define agent LLM
+
+Using Gemini Flash / Pro:
+
+llm = ChatVertexAI(model_name="gemini-1.5-flash")
+
+3. Build the agent
+
+Use LangChain's agent:
+
+agent = initialize_agent(tools, llm, agent="chat-conversational-react-description")
+
+4. Create FastAPI app
+
+Expose endpoint:
+
+@app.post("/agent")
+def run_agent(req: Prompt):
+    return {"response": agent.run(req.prompt)}
+
+PHASE 4 — Containerize the Agent
+1. Create Dockerfile
+FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+
+2. Build & Push Image
+gcloud builds submit --tag gcr.io/PROJECT_ID/ai-agent
+
+ PHASE 5 — Deploy to Cloud Run
+1. Deploy
+gcloud run deploy ai-agent \
+  --image gcr.io/PROJECT_ID/ai-agent \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --service-account ai-agent-sa@PROJECT_ID.iam.gserviceaccount.com
+
+2. Set environment variables
+
+GCP_PROJECT
+
+GITHUB_REPO
+
+GITHUB_WORKFLOW
+
+SERVICE_PATH
+
+3. Add secrets
+
+GitHub Token
+
+Slack Webhook
+
+ PHASE 6 — Test the Agent
+Test with CURL:
+curl -X POST https://YOUR_URL/agent \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Run unit tests and show output"}'
+
+Test RAG:
+curl -X POST https://YOUR_URL/agent \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Explain the pipeline steps"}'

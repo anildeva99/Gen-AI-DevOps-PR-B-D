@@ -1,0 +1,52 @@
+Foundational Technical Skills
+
+These are essential regardless of whether you’re in SAP or any other skills (Apart from Cloud/Devops) moving into AI/DevOps.
+
+------> Programming Skills
+
+Python – Most common for AI/ML and automation
+
+Bonus: Shell scripting or basic Bash if you're doing DevOps work
+
+
+----->Operating Systems
+
+Linux basics – Command-line, file system, permissions
+
+Why: Most DevOps tools and AI workloads run on Linux
+
+2. Basic AI/ML Concepts
+
+Even if you’re not building models, understanding these will help you use AI tools effectively.
+
+Machine Learning (ML): Supervised vs unsupervised learning, models, training/testing
+
+Deep Learning (optional but helpful): Neural networks, TensorFlow, or PyTorch (basic level)
+
+Data Preparation: Cleaning, feature engineering, etc.
+
+You can take an intro course on Coursera, Udemy, or freeCodeCamp to get started.
+
+3. DevOps Basics
+
+If you're newer to DevOps, focus on these core areas:
+
+CI/CD – Tools like Jenkins, GitLab CI, or GitHub Actions
+
+Containers – Docker and Kubernetes basics
+
+Infrastructure as Code (IaC) – Terraform or Ansible
+
+Monitoring/Logging – Prometheus, Grafana, ELK stack
+
+4. AI for DevOps (AIOps) Specific Topics
+
+This is where AI meets DevOps. Learn:
+
+Anomaly detection for system performance and logs
+
+Predictive analytics for capacity planning
+
+ChatOps – Using AI/ML in tools like Slack, MS Teams with bots
+
+Log analysis using AI (e.g., Logz.io, Datadog, Splunk with ML add-ons)

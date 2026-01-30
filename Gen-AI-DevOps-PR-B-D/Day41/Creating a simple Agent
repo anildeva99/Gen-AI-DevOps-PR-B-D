@@ -1,0 +1,42 @@
+High Level Steps
+
+
+Step 1 — Prepare Your Data (RAG)
+
+Collect documents (PDFs, workflows, logs, procedures, notes)
+
+Store them in a vector database (Chroma, Pinecone, BigQuery Vector)
+
+Step 2 — Build the Agent Logic
+
+Use LangChain / Agent framework
+
+Define tools (GitHub trigger, Slack notify, BigQuery query, etc.)
+
+Configure Gemini Flash / Pro as the LLM
+
+Step 3 — Develop the Agent API
+
+Create a FastAPI backend
+
+Build a /agent endpoint
+
+Accept prompts and return LLM responses
+
+Integrate RAG + tools
+
+Step 4 — Containerize the Agent
+
+Build a Docker image
+
+Push to Artifact Registry
+
+Step 5 — Deploy the Agent
+
+Deploy to Cloud Run
+
+Attach service account
+
+Add environment variables & secrets
+
+Test using CURL/UI

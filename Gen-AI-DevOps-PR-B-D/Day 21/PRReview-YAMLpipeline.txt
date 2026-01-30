@@ -1,0 +1,56 @@
+# ================================================
+# 🚀 Azure DevOps – AI-Powered Pull Request Review
+# ================================================
+
+# trigger: none
+pr:
+  branches:
+    include:
+      - '*'
+
+# ✅ Secure Variables — Loaded from Library
+variables:
+- group: AI_PR_Review_Variables   # (created under Pipelines → Library)
+
+stages:
+- stage: AI_PR_Review
+  displayName: "🤖 AI Pull Request Code Review"
+
+  jobs:
+  - job: Review_PR_Code
+    displayName: "🔍 Scan Python Code in PR using Azure OpenAI"
+    pool:
+      vmImage: 'windows-latest'
+
+    steps:
+
+    # ✅ Step 1: Setup Python
+    - task: UsePythonVersion@0
+      displayName: "🐍 Use Python 3.x"
+      inputs:
+        versionSpec: '3.x'
+
+    # ✅ Step 2: Install Linter
+    - script: |
+        echo "📦 Installing Pylint for syntax & style checks..."
+        pip install pylint
+      displayName: "📥 Install Pylint"
+
+    # ✅ Step 3: Export Variables & Run Script
+    - pwsh: |
+        Write-Host "✅ Setting environment variables for Azure DevOps + OpenAI..."
+
+        $env:AZDO_ORG_URL = "$(AZDO_ORG_URL)"
+        $env:AZDO_PROJECT = "$(AZDO_PROJECT)"
+        $env:AZDO_REPO_ID = "$(AZDO_REPO_ID)"
+        $env:AZDO_PAT = "$(AZDO_PAT)"
+        $env:OPENAI_ENDPOINT = "$(OPENAI_ENDPOINT)"
+        $env:OPENAI_API_KEY = "$(OPENAI_API_KEY)"
+        $env:OPENAI_DEPLOYMENT_NAME = "$(OPENAI_DEPLOYMENT_NAME)"
+
+        Write-Host "🚀 Starting AI-based PR review..."
+
+        pwsh ./AI_PR_Review/ai-review-all-PR.ps1
+
+        Write-Host "🎯 PR Review completed by AI."
+      displayName: "🤖 Run AI PR Reviewer Script"

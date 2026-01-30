@@ -1,0 +1,19 @@
+rules:
+  - id: QA-TEST-001
+    title: Tests required when src code changes
+    severity: MAJOR
+    enforce: true
+    match:
+      type: file_path_contains
+      path: "src/"
+    fix: "Add unit tests under tests/"
+
+  - id: QA-TERRAFORM-001
+    title: Terraform must be formatted
+    severity: MINOR
+    enforce: false
+    match:
+      type: file_glob
+      file_glob: "**/*.tf"
+    fix: "Run terraform fmt"
+

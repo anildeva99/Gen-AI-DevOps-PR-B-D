@@ -1,0 +1,212 @@
+ ┌───────────────────────────────┐
+ │         Target VM(s)          │
+ │ (node_exporter on port 9100)  │
+ └───────────────┬───────────────┘
+                 │ metrics
+                 ▼
+ ┌───────────────────────────────┐
+ │      Monitoring VM            │
+ │ Prometheus + Alertmanager     │
+ │ - prometheus.yml              │
+ │ - alert_rules.yml             │
+ │ - alertmanager.yml            │
+ └───────────────┬───────────────┘
+                 │ alerts (HTTP POST)
+                 ▼
+ ┌───────────────────────────────┐
+ │ AI Anomaly Insights API       │
+ │ Flask App (ai_anomaly_insights.py)
+ │ - Receives Prometheus alerts
+ │ - Logs & analyzes data
+ │ - Sends summarized alerts to Slack
+ └───────────────┬───────────────┘
+                 │ webhook (JSON)
+                 ▼
+ ┌───────────────────────────────┐
+ │      Slack Workspace          │
+ │  → #new-channel               │
+ │  → Receives AI summarized alert
+ └───────────────────────────────┘
+
+
+
+
+
+
+
+
+---------------------------------------------------------------
+
+
+Step-By-Step Implementation
+STEP 1 – Setup Target VM (Metrics Source)
+
+Install Node Exporter:
+
+sudo apt update -y
+wget https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz
+tar xvf node_exporter-1.6.1.linux-amd64.tar.gz
+cd node_exporter-1.6.1.linux-amd64
+./node_exporter &
+
+
+Confirm on browser:
+http://<target-vm-ip>:9100/metrics
+
+STEP 2 – Setup Monitoring VM (Prometheus + Alertmanager)
+ Install Docker
+sudo apt update -y
+sudo apt install -y docker.io docker-compose
+sudo systemctl enable docker
+sudo systemctl start docker
+
+ Create Config Files
+
+Inside ~/monitoring/:
+
+prometheus.yml
+
+alert_rules.yml
+
+alertmanager.yml
+
+ai_anomaly_insights.py
+
+STEP 3 – Configure Prometheus
+
+prometheus.yml
+
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['<target-vm-ip>:9100']
+
+STEP 4 – Add Alert Rules
+
+alert_rules.yml
+
+groups:
+- name: node_alerts
+  rules:
+  - alert: NodeExporterDown
+    expr: up{job="node_exporter"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Node Exporter Down"
+      description: "The Node Exporter on {{ $labels.instance }} is down."
+
+STEP 5 – Configure Alertmanager
+
+alertmanager.yml
+
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: 'aiops-bot'
+
+receivers:
+  - name: 'aiops-bot'
+    webhook_configs:
+      - url: 'http://localhost:5000/alert'
+
+STEP 6 – Run Prometheus and Alertmanager
+docker run -d --name prometheus \
+  --network host \
+  -v ~/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml \
+  -v ~/monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml \
+  prom/prometheus
+
+docker run -d --name alertmanager \
+  --network host \
+  -v ~/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml \
+  prom/alertmanager
+
+
+Verify:
+
+Prometheus → http://<vm-ip>:9090
+
+Alertmanager → http://<vm-ip>:9093
+
+STEP 7 – Create Flask AI Alert Receiver
+
+ai_anomaly_insights.py
+
+from flask import Flask, request, jsonify
+import requests, json, datetime
+
+app = Flask(__name__)
+
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/XXXX/XXXX/XXXX"
+
+@app.route('/alert', methods=['POST'])
+def alert_handler():
+    data = request.json
+    print("Received Alert:", data)
+
+    message = f" *Prometheus Alert Triggered!* \n\n{json.dumps(data, indent=2)}"
+    payload = {"text": message}
+    requests.post(SLACK_WEBHOOK_URL, json=payload)
+    
+    return jsonify({"status": "received"})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+
+STEP 8 – Run Flask Service
+sudo fuser -k 5000/tcp
+nohup python3 ~/monitoring/ai_anomaly_insights.py > ~/monitoring/ai_alerts.log 2>&1 &
+tail -f ~/monitoring/ai_alerts.log
+
+
+Test the endpoint:
+
+curl -X POST -H "Content-Type: application/json" \
+-d '{"test":"alert"}' http://localhost:5000/alert
+
+STEP 9 – Integrate with Slack
+
+Go to your Slack workspace
+→ Left panel → Apps → Search for “Incoming Webhooks”
+
+Click Add to Slack → select #new-channel
+
+Click Add Incoming Webhook Integration
+
+Copy the Webhook URL
+
+Paste it into ai_anomaly_insights.py (SLACK_WEBHOOK_URL)
+
+STEP 10 – Test End-to-End
+
+Stop Node Exporter on the target VM → triggers “NodeExporterDown”
+
+Prometheus fires alert → Alertmanager → Flask webhook
+
+Flask posts formatted alert to Slack
+
+Slack channel #new-channel shows AI alert message 🚀
+
+ Future Enhancements (for Students)
+Enhancement	Description
+ AI Root-Cause Summary	Use Vertex AI / OpenAI to summarize the root cause of alerts automatically.
+ Grafana Dashboard	Build a visualization dashboard for system metrics.
+ Multi-Agent Extension	Add Log Analyzer and Incident Classifier agents using LangChain or Vertex AI ADK.
+ Email & Ticketing	Integrate with ServiceNow / Jira / Gmail APIs for automated incident creation.
+ Cloud Deployment	Deploy Flask API on Cloud Run or EC2 for production.
+ End-to-End Flow Summary
+Component	Role	Port
+Node Exporter	Metrics Exporter	9100
+Prometheus	Scrapes Metrics & Rules	9090
+Alertmanager	Sends Alerts via Webhook	9093
+Flask App	AI Receiver & Slack Notifier	5000
+Slack	Notification Channel	Cloud
+
+
+-------------------------------------------------

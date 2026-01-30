@@ -1,0 +1,167 @@
+END-TO-END AIOps ALERT PIPELINE — FINAL WORKING STEPS
+ PHASE 1 — VM Setup
+ Create Two VMs
+VM	Purpose	Region
+target-vm	Generates metrics via Node Exporter	asia-southeast1-a
+monitoring-vm	Runs Prometheus + Alertmanager + Flask AI engine	asia-southeast1-a
+ PHASE 2 — Setup TARGET VM (Metrics Source)
+SSH into target-vm:
+gcloud compute ssh target-vm --zone=asia-southeast1-a
+
+Install Node Exporter:
+sudo apt update -y
+wget https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz
+tar xvf node_exporter-1.6.1.linux-amd64.tar.gz
+cd node_exporter-1.6.1.linux-amd64
+./node_exporter &
+
+Verify:
+
+Open:
+
+http://<target-vm-external-ip>:9100/metrics
+
+ PHASE 3 — Setup MONITORING VM
+SSH:
+gcloud compute ssh monitoring-vm --zone=asia-southeast1-a
+
+Install Docker + Compose:
+sudo apt update -y
+sudo apt install -y docker.io docker-compose
+sudo systemctl enable docker
+sudo systemctl start docker
+
+Create monitoring folder:
+mkdir -p ~/monitoring
+cd ~/monitoring
+
+ PHASE 4 — Prometheus Configuration
+Create prometheus.yml:
+cat > ~/monitoring/prometheus.yml << 'EOF'
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'node_exporter'
+    static_configs:
+      - targets: ['34.124.231.170:9100']
+EOF
+
+ PHASE 5 — Alert Rules
+Create alert_rules.yml:
+cat > ~/monitoring/alert_rules.yml << 'EOF'
+groups:
+- name: node_alerts
+  rules:
+  - alert: NodeExporterDown
+    expr: up{job="node_exporter"} == 0
+    for: 1m
+    labels:
+      severity: critical
+    annotations:
+      summary: "Node Exporter Down"
+      description: "The Node Exporter on {{ $labels.instance }} is down."
+EOF
+
+ PHASE 6 — Alertmanager Configuration
+Create alertmanager.yml:
+cat > ~/monitoring/alertmanager.yml << 'EOF'
+global:
+  resolve_timeout: 5m
+
+route:
+  receiver: aiops-bot
+
+receivers:
+  - name: aiops-bot
+    webhook_configs:
+      - url: 'http://10.148.0.3:5000/alert'
+EOF
+
+
+ 10.148.0.3 is monitoring-vm internal IP.
+
+
+ PHASE 7 — Run Prometheus + Alertmanager
+Run Prometheus:
+sudo docker run -d --name prometheus \
+  --network host \
+  -v ~/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml \
+  -v ~/monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml \
+  prom/prometheus
+
+Run Alertmanager:
+sudo docker run -d --name alertmanager \
+  --network host \
+  -v ~/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml \
+  prom/alertmanager \
+  --config.file=/etc/alertmanager/alertmanager.yml
+
+ PHASE 8 — Flask AI Webhook Service
+Create Python file:
+nano ~/monitoring/ai_anomaly_insights.py
+
+
+Paste:
+
+from flask import Flask, request, jsonify
+import requests, json
+
+app = Flask(__name__)
+
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"
+
+@app.route('/alert', methods=['POST'])
+def alert_handler():
+    data = request.json
+    print("Received Alert:", data)
+
+    message = f"*Prometheus Alert Triggered!*\n```{json.dumps(data, indent=2)}```"
+    requests.post(SLACK_WEBHOOK_URL, json={"text": message})
+    
+    return jsonify({"status": "received"})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+
+ PHASE 9 — Create Python Virtual Environment
+sudo apt install python3-venv -y
+python3 -m venv ~/flaskenv
+~/flaskenv/bin/pip install flask requests
+
+ PHASE 10 — Run Flask in Background (Correct Way)
+cd ~/monitoring
+sudo fuser -k 5000/tcp || true
+nohup ~/flaskenv/bin/python3 ai_anomaly_insights.py > ai_alerts.log 2>&1 &
+
+
+Check logs:
+
+tail -f ai_alerts.log
+
+
+You must see:
+
+Running on http://0.0.0.0:5000
+
+ PHASE 11 — Test End-to-End
+Stop Node Exporter (on target-vm):
+pkill node_exporter
+
+Verify Prometheus:
+http://<monitoring-vm-ip>:9090/alerts
+
+
+Status → FIRING
+
+Check Flask logs:
+tail -f ~/monitoring/ai_alerts.log
+
+
+You will see:
+
+Received Alert: {...}
+
+Check Slack:
+
+Message appears in #all-aiops(My slack channel)

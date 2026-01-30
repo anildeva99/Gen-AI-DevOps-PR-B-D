@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ADK DevOps Agent</title>
+</head>
+<body>
+  <h2>ADK DevOps Agent (Gemini 2.0 Flash)</h2>
+
+  <textarea id="input" rows="5" cols="60"
+    placeholder="Ask a DevOps question..."></textarea><br><br>
+
+  <button onclick="send()">Ask Agent</button>
+
+  <pre id="output"></pre>
+
+  <script>
+    async function send() {
+      const message = document.getElementById("input").value;
+
+      const response = await fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+
+      const data = await response.json();
+      document.getElementById("output").innerText =
+        data.response || data.error;
+    }
+  </script>
+</body>
+</html>
+

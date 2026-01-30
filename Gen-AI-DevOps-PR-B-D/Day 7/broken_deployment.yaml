@@ -1,0 +1,11 @@
+apiVrsion: v1
+kind: Pod
+metadata
+  name my-pod
+spec:
+  containrs:
+    - name: my-app
+      image: nginx
+      ports:
+        - contanerPort: 80
+

@@ -1,0 +1,28 @@
+
+End-to-End Process flow
+
+Collect signals → Shell/Python gathers logs and system data.
+
+Build vectorstore → Docs are embedded & indexed with FAISS.
+
+LLM-only plan → Mistral generates automation script without external context.
+
+RAG plan → LangChain retrieves docs → enriches prompt → Mistral generates context-aware script.
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+Compare outputs →  how RAG makes the output more accurate, secure, and production-ready.
+| Layer          | Skill                     | Why It Matters                      |
+| -------------- | ------------------------- | ----------------------------------- |
+| AI Brain       | **Mistral LLM**           | Natural language → automation logic |
+| Memory         | **LangChain + RAG**       | Adds real-world knowledge to AI     |
+| Knowledge      | **Docs + FAISS**          | Teaches semantic retrieval          |
+| Infrastructure | **AWS EC2 + Shell**       | Realistic deployment                |
+| Intelligence   | **Sentence Transformers** | Improves retrieval accuracy         |
+| Automation     | **Shell scripts**         | Final outcome – auto-remediation    |
+
+Deploy shell script → Run shell_fix.sh for automated remediation.
+
+
+
+----------------------------------------------------------------------------------------------
+

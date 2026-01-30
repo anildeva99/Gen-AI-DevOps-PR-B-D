@@ -1,0 +1,120 @@
+
+
+In Cloud Shell:
+
+cd ~/Gen-AI-DevOps/AgentBuild
+
+
+Verify files:
+
+ls
+
+
+You should see:
+
+agent.py
+server.py
+tools.py
+Dockerfile
+requirements.txt
+static/index.html
+
+SA- account creation and add required roles 
+
+gcloud iam service-accounts create agent-sa \
+    --display-name "Agent Service Account"
+
+
+PROJECT_ID=testadi-459816
+SA_EMAIL=agent-sa@$PROJECT_ID.iam.gserviceaccount.com
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$SA_EMAIL" \
+    --role="roles/aiplatform.user"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$SA_EMAIL" \
+    --role="roles/storage.objectViewer"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$SA_EMAIL" \
+    --role="roles/logging.logWriter"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$SA_EMAIL" \
+    --role="roles/run.invoker"
+
+
+
+ STEP 2 — Enable required APIs
+gcloud services enable aiplatform.googleapis.com
+gcloud services enable run.googleapis.com
+gcloud services enable artifactregistry.googleapis.com
+
+ STEP 3 — Create Artifact Registry repo (FIRST TIME ONLY)
+
+If already created → skip.
+
+gcloud artifacts repositories create agents \
+  --repository-format=docker \
+  --location=us-central1
+
+ STEP 4 — Build Docker image
+gcloud builds submit \
+  --tag us-central1-docker.pkg.dev/testadi-459816/agents/agentbuild:latest
+
+
+This step packages:
+
+Python code
+
+Dependencies
+
+static UI
+
+Flask server
+
+Vertex AI model loader
+
+ STEP 5 — Deploy to Cloud Run
+gcloud run deploy agentbuild \
+  --image us-central1-docker.pkg.dev/testadi-459816/agents/agentbuild:latest \
+  --region us-central1 \
+  --allow-unauthenticated \
+  --service-account agent-sa@testadi-459816.iam.gserviceaccount.com
+
+
+Important: The service account must have:
+
+IAM roles required:
+
+Vertex AI User
+
+Storage Object Viewer
+
+Artifact Registry Reader
+
+Cloud Run Invoker
+
+STEP 6 — Test the API endpoint
+Test using cURL from Cloud Shell
+curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"message":"hi"}' \
+  https://agentbuild-xxxxxxxxxxxx.us-central1.run.app/predict
+
+
+Expected output:
+
+{"response":"Hi there! How can I help you today?\n"}
+
+STEP 7 — Test UI (Browser)
+
+Open:
+
+https://agentbuild-xxxxxxxxxxxxx.us-central1.run.app
+
+
+Enter text → press Send.
+
+Your UI should respond based on the model.

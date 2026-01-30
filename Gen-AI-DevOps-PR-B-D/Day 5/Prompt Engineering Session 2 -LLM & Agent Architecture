@@ -1,0 +1,21 @@
+[ Prompts ]  ← Instructions
+                         ↓
+                   [ LLM ]     ← Brain (reasoning, language generation)
+                                                                  ↓
+                                                              [ Agent Framework ]  ← Orchestration (memory, tools, APIs)
+                                                                                                                 ↓
+                                                                                                       [ Agent ]   ← Real-world assistant (DevOps bot, Finance bot, etc.)
+
+
+Summary :
+
+LLM = brain (reasoning & text generation)
+
+Prompting = language you use to “program” the brain
+
+Agent Framework = structure that gives the LLM memory, tools, decision loops
+
+Agent = packaged solution (LLM + prompts + tools) for a specific use case
+
+So the Hierarchy is:
+Prompts → LLM → Agent Framework → Agent (real-world use case)

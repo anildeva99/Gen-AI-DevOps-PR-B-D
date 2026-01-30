@@ -1,0 +1,69 @@
+-----------------------------------------------------
+Popular Generative AI Tools for DevOps
+ 1. Coding & Scripting Assistants
+
+GitHub Copilot / Amazon CodeWhisperer / Tabnine → AI pair programmers that help generate code, CI/CD YAML, Terraform, Ansible, and Kubernetes manifests.
+
+Ansible Lightspeed (IBM + Red Hat) → AI-assisted Ansible playbook generation.
+
+Pulumi AI → Generates Infrastructure as Code (IaC) in multiple languages.
+
+ 2. CI/CD & Release Automation with AI
+
+Harness.io → AI-driven Continuous Delivery (predicts failures, automates rollbacks).
+
+Jenkins with AI plugins → Uses AI to recommend pipeline optimizations and test coverage.
+
+GitLab Duo → AI assistant inside GitLab for pipelines, code reviews, and security fixes.
+
+3. Monitoring, AIOps & Troubleshooting
+
+Dynatrace Davis AI → Predicts outages (e.g., memory leaks, latency spikes).
+
+Datadog AIOps → AI-based anomaly detection and incident triage.
+
+New Relic AI → Correlates logs/metrics with AI to cut down alert noise.
+
+Google Cloud AIOps / AWS DevOps Guru / Azure Monitor AI → Cloud-native predictive monitoring.
+
+4. Kubernetes & CloudOps AI Tools
+
+Kubiya.ai → AI-powered DevOps virtual assistant for K8s and cloud workflows.
+
+StormForge → Uses ML to optimize Kubernetes workloads (cost & performance).
+
+BotKube + LLMs → ChatOps for Kubernetes (query cluster status in plain English).
+
+KubeGPT → Conversational AI for K8s troubleshooting.
+
+ 5. DevSecOps with AI
+
+Snyk AI → Fixes vulnerabilities with AI code suggestions.
+
+GitHub Advanced Security + Copilot → Detects secrets, misconfigs, vulnerabilities.
+
+Aqua Security Trivy AI → AI-based container and supply-chain scanning.
+
+ 6. Knowledge & Incident Management
+
+PagerDuty AI Ops → Groups alerts, predicts incident causes, and suggests fixes.
+
+FireHydrant / Shoreline AI Runbooks → Auto-generate remediation steps.
+
+Slack GPT / MS Teams Copilot → AI-driven ChatOps assistants for DevOps teams.
+
+Summary:
+
+Generative AI is reshaping DevOps by:
+
+Automating code & IaC creation (Copilot, Pulumi AI, Ansible Lightspeed)
+
+Making CI/CD smarter (Harness, GitLab Duo)
+
+Predicting failures before they happen (Dynatrace, DevOps Guru)
+
+Optimizing Kubernetes & cloud costs (StormForge, Kubiya.ai)
+
+Strengthening security (Snyk AI, Aqua Security)
+
+Improving incident response (PagerDuty AI, FireHydrant)

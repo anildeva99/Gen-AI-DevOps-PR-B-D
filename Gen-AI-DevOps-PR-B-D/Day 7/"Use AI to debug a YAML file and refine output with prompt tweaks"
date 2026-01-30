@@ -1,0 +1,46 @@
+
+Step 1: Launch & Connect
+
+Launch EC2 t3.large with Amazon Linux 2023
+
+Connect:
+
+ssh -i your-key.pem ec2-user@<EC2_PUBLIC_IP>
+
+🔹 Step 2: Update & Install Basics
+sudo yum update -y
+sudo yum install -y curl git --allowerasing
+
+🔹 Step 3: Install Ollama
+curl -fsSL https://ollama.com/install.sh | sh
+ollama --version
+
+🔹 Step 4: Pull a Model
+ollama pull tinyllama
+ollama list
+
+🔹 Step 5: Create Workspace
+mkdir ~/yaml_demo && cd ~/yaml_demo
+
+🔹 Step 6: Create Broken YAML
+vi broken_deployment.yaml
+
+
+
+
+🔹 Step 7: Create Debug Script
+vi debug_yaml.sh
+
+
+(this script will read broken_deployment.yaml, send it to Ollama, and save fixed output)
+
+Make it executable:
+
+chmod +x debug_yaml.sh
+
+🔹 Step 8: Run Debug Script
+./debug_yaml.sh
+
+🔹 Step 9: View Fixed YAML
+cat fixed_deployment.yaml
+

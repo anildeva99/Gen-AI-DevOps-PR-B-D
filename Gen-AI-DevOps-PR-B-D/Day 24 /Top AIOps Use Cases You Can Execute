@@ -1,0 +1,14 @@
+Anomaly Detection in Cloud Metrics (Monitoring + AI)
+Log Analysis with LLMs (AI-Driven Root Cause Analysis)
+Incident Prediction (Proactive AIOps)
+Auto-Remediation using Cloud Functions or Lambda
+Intelligent Incident Management with ChatOps
+------------------------------------------------------
+| Use Case                     | Description                              | Stack                            |
+| ---------------------------- | ---------------------------------------- | -------------------------------- |
+| **Capacity Forecasting**     | Predict infra scaling needs              | Vertex AI Time Series + BigQuery |
+| **Ticket Classification**    | Auto-categorize incidents                | ServiceNow + LLM API             |
+| **Performance Optimization** | Suggest config changes                   | LLM + Grafana API                |
+| **Correlation Analysis**     | Link metrics + logs + traces             | OpenTelemetry + LLM              |
+| **SRE Co-Pilot**             | Conversational agent for operations data | LangChain + Vector DB + OpenAI   |
+

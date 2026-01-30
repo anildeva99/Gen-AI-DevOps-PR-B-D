@@ -1,0 +1,13 @@
+
+
+
+
+| Capability                                  | Mistral Alone               | Mistral + LangChain + RAG       |
+| ------------------------------------------- | --------------------------  | ----------------------------    |
+| Uses org data                               | ❌                          | ✅                            |
+| Follows internal YAML / Terraform templates | ❌                          | ✅                            |
+| Fixes syntax                                | ✅                          | ✅                            |
+| Explains using your context                 | ❌                          | ✅                            |
+| Workflow control (multi-step)               | ❌                          | ✅                            |
+| Memory / Reusability                        | ❌                          | ✅                            |
+| Ideal Use                                   | Quick text/code generation | Enterprise DevOps automation |

@@ -1,0 +1,210 @@
+
+LAB: DevOps DB Agent using ADK-style Architecture
+Goal
+
+Build a DevOps Database Agent that can answer questions like:
+
+status cloud_run_api
+status payment_service
+
+
+Using:
+
+SQLite DB
+
+Tool layer
+
+Agent layer
+
+CLI chat interface
+
+ Architecture
+User
+ ↓
+app/chat.py
+ ↓
+agent/db_agent.py
+ ↓
+tools/db_tool.py
+ ↓
+db/db_client.py
+ ↓
+SQLite (devops.db)
+
+ STEP 0: Prerequisites
+Python 3.10+
+Cloud Shell / Linux
+
+ STEP 1: Create Project Structure
+mkdir adk-db-demo
+cd adk-db-demo
+
+mkdir agent app tools db
+touch agent/__init__.py tools/__init__.py
+
+
+Final structure:
+
+adk-db-demo/
+├── agent/
+├── app/
+├── tools/
+├── db/
+
+🗄️ STEP 2: Create Database Schema
+db/schema.sql
+CREATE TABLE services (
+    service_name TEXT PRIMARY KEY,
+    environment TEXT,
+    status TEXT,
+    last_deployed TEXT
+);
+
+ STEP 3: Seed Database with Sample Data
+db/seed_data.py
+import sqlite3
+from pathlib import Path
+
+DB_PATH = Path(__file__).parent.parent / "devops.db"
+
+conn = sqlite3.connect(DB_PATH)
+cursor = conn.cursor()
+
+cursor.executescript(open("db/schema.sql").read())
+
+services = [
+    ("cloud_run_api", "prod", "DOWN", "2025-01-18"),
+    ("payment_service", "prod", "UP", "2025-01-20"),
+    ("ci_pipeline", "staging", "FAILED", "2025-01-19"),
+]
+
+cursor.executemany(
+    "INSERT OR REPLACE INTO services VALUES (?, ?, ?, ?)",
+    services
+)
+
+conn.commit()
+conn.close()
+
+print("✅ Database seeded successfully")
+
+
+Run:
+
+python3 db/seed_data.py
+
+ STEP 4: Database Client Layer
+db/db_client.py
+import sqlite3
+from pathlib import Path
+
+DB_PATH = Path(__file__).parent.parent / "devops.db"
+
+def get_connection():
+    """
+    Returns a SQLite connection to devops.db
+    """
+    return sqlite3.connect(DB_PATH)
+
+ STEP 5: Tool Layer (DB Tool)
+tools/db_tool.py
+from db.db_client import get_connection
+
+def fetch_service_status(service_name: str):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        """
+        SELECT service_name, environment, status, last_deployed
+        FROM services
+        WHERE service_name = ?
+        """,
+        (service_name,)
+    )
+
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        return None
+
+    return {
+        "service_name": row[0],
+        "environment": row[1],
+        "status": row[2],
+        "last_deployed": row[3],
+    }
+
+ STEP 6: Agent Logic (DB Agent)
+agent/db_agent.py
+from tools.db_tool import fetch_service_status
+
+def answer(user_query: str) -> str:
+    """
+    DB Agent entry point.
+    Handles service status queries using DB.
+    """
+
+    if "status" in user_query.lower():
+        service_name = user_query.lower().replace("status", "").strip()
+
+        if not service_name:
+            return "❌ Please specify a service name (example: status cloud_run_api)"
+
+        result = fetch_service_status(service_name)
+
+        if not result:
+            return f"❌ No service found with name: {service_name}"
+
+        return (
+            f"✅ Service: {result['service_name']}\n"
+            f"Environment: {result['environment']}\n"
+            f"Status: {result['status']}\n"
+            f"Last Deployed: {result['last_deployed']}"
+        )
+
+    return "❓ I can answer queries like: status <service_name>"
+
+ STEP 7: Chat Interface
+app/chat.py
+from agent.db_agent import answer
+
+print("🗄️ DevOps DB Agent (type 'exit' to quit)\n")
+
+while True:
+    q = input("You: ").strip()
+    if q.lower() in ("exit", "quit"):
+        break
+    print("\nAgent:\n" + answer(q) + "\n")
+
+ STEP 8: Run the Agent
+
+From project root:
+
+export PYTHONPATH=$(pwd)
+python3 app/chat.py
+
+✅ EXPECTED OUTPUT
+🗄️ DevOps DB Agent (type 'exit' to quit)
+
+You: status cloud_run_api
+
+Agent:
+✅ Service: cloud_run_api
+Environment: prod
+Status: DOWN
+Last Deployed: 2025-01-18
+
+
+Try:
+
+status payment_service
+status ci_pipeline
+
+ Lab Outcome
+
+✔ DB-backed DevOps Agent
+✔ Clean ADK-style separation
+✔ Realistic SRE use case
+✔ Easy to extend to APIs & RAG

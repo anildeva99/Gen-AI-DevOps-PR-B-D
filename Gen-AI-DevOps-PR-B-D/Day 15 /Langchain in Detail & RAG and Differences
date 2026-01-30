@@ -1,0 +1,96 @@
+LangChain:
+
+LangChain is an open-source framework for building applications (Agents) powered by large language models (LLMs). 
+
+It provides standardized abstractions and components (chains, prompts, memory, tools integrations)  
+
+LangChain supports multiple languages (Python / JavaScript) and lets you swap in different LLM backends, vector stores, 
+data sources, etc.
+
+Uses Of Langchain:
+
+Chatbots / Conversational agents — maintaining context, memory, chaining operations.
+Agent orchestration — linking LLM outputs with tool invocation (APIs, actions) in a chain or agent-/// one agent - output - we want to consume this out puts as input to the other agent - framework - 
+Memory / State across interactions — storing conversation history or other stateful context.
+Integrations with external systems — databases, vector stores, APIs, search services, etc.
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+why we need framework ? why wont we  use the Models directly with out framework ?
+
+
+
+You can absolutely work with LLMs without frameworks.
+You can directly call APIs like:
+--------------------------------------------------------------------------------------------------------
+from openai import OpenAI
+
+client = OpenAI(api_key="...")
+response = client.chat.completions.create(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Explain DevOps"}]
+)
+print(response.choices[0].message.content)
+-------------------------------------------------------------------------------------------------------------------------
+
+Works perfectly fine for simple one-shot queries.
+
+But as soon as your system grows — and you need context, retrieval, tools, memory, or multiple steps — it quickly becomes complex, so we need a framework like langchain
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+                            Differnece between with Framework like Langchain and wiht out Framework 
+
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+| Challenge                       | What Happens Without Framework                                  | How Frameworks Help                                                             |
+| ------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+|       Prompt Management         | You manually write and manage dozens of prompts in code         | Provides `PromptTemplate`, parameterization, and versioning                     |
+|       Multi-step Workflows      | You manually call model → parse output → call next model → etc. | `Chains` and `Agents` let you sequence or dynamically choose next steps         |
+|       Context / Memory          | You store chat history manually in a DB or variable             | Provides `Memory` modules (short-term, long-term, vector memory)                |
+|       Retrieval from data       | You build your own vector DB, embeddings, and similarity search | Offers built-in integration with BigQuery Vector, etc. |
+|      Tool /  API Calling        | You parse JSON/text manually to decide what API to call         | LangChain handles structured “function calling” automatically                   |
+|       Orchestration / Agents    | You write control logic yourself                                | Framework decides which tool/model to invoke next (“agent loop”)                |
+|      Scaling  / Observability   | Hard to monitor latency, costs, or caching                      | Provides tracing (LangSmith), caching layers, retry logic                       |
+|       Abstraction over LLMs     | Each vendor (OpenAI, Gemini, Mistral, Bedrock) has diff API     | Unified interface → switch model vendors easily        
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+what is RAG ? Diff Between RAG and Langchain ?
+
+RAG = Retrieval-Augmented Generation.
+
+Definition :
+
+It’s a technique that combines two components: a retrieval system (searching documents, knowledge bases, vector stores) + a generative model (LLM).
+
+The idea behind : Before generating a response, the system retrieves relevant context (documents, passages) and augments the prompt or the model context
+with that retrieved text. Then the LLM can generate a more informed, grounded answer rather than hallucinating.
+
+                                                     Diff Between Langchain & RAG 
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
+| Element    | LangChain                                                                                       | RAG                                                                               |
+| ---------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Role       | A **framework / library** for building LLM-powered apps, chaining models, memory, tools, agents | A **technique / paradigm** (retrieval + generation) to improve LLM output         |
+| Scope      | Broad — supports chains, agents, memory, tool calls, etc.                                       | Focused — combining retrieval + generation for grounded responses                 |
+| Usage      | You can implement RAG workflows within LangChain                                                | RAG can be used without LangChain (but LangChain helps you build RAG more easily) |
+| Complexity | Orchestration, integrating many components                                                      | Mainly about retrieval + prompt augmentation                                      |
+| Examples   | Agents that call APIs, maintain state, orchestrate logic                                        | A Q&A system that looks up relevant docs before responding                        |
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+ Process Flow
+
+| Step | What Happens                | Action doneby   |
+| ---- | --------------------------- | --------------- |
+| 1    | User asks a question        | UI or user      |
+| 2    | Search for relevant data    | RAG Retriever   |
+| 3    | Build context + query       | LangChain       |
+| 4    | Generate intelligent answer | LLM             |
+| 5    | Send formatted response     | LangChain / App |

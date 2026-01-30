@@ -1,0 +1,166 @@
+Detect anomalies (like high latency or payment timeout spikes) from logs in real time →
+Generate incidents →
+Auto-log alerts to Slack channel 
+Allow manual “Resolve” via dashboard
+----------------------------------------
+
+
+
+                   ┌──────────────────────────────┐
+                   │        GCP VM (Debian)       │
+                   │ ──────────────────────────── │
+                   │  1️⃣ Log Generator            │
+                   │     ↓                        │
+                   │  2️⃣ AIOps Anomaly Detector   │
+                   │     ↓                        │
+                   │  3️⃣ Incident Ticket DB (SQLite) │
+                   │     ↓                        │
+                   │  4️⃣ Flask Dashboard (Port 8080) │
+                   │     ↓                        │
+                   │  5️⃣ Slack Webhook Alerts      │
+                   └──────────────┬───────────────┘
+                                  │
+                         Slack Channel (#all-intern)
+
+
+-----------------------------------------------------------------------
+
+Steps to execute 
+
+Step-by-Step Setup in a New GCP VM
+Step 1 — Create GCP VM
+gcloud compute instances create aiops-vm \
+  --zone=us-central1-a \
+  --machine-type=e2-standard-2 \
+  --image-family=debian-12 \
+  --image-project=debian-cloud \
+  --tags=http-server \
+  --boot-disk-size=20GB
+
+Step 2 — SSH into VM
+gcloud compute ssh aiops-vm --zone=us-central1-a
+
+Step 3 — Install Required Packages
+sudo apt update -y
+sudo apt install -y python3 python3-venv python3-pip
+
+Step 4 — Setup Project Directory
+mkdir ~/aiops_incident_demo && cd ~/aiops_incident_demo
+python3 -m venv venv
+source venv/bin/activate
+pip install flask flask_sqlalchemy scikit-learn pandas requests
+
+Step 5 — Create the Script
+
+Create file:
+
+nano aiops_incident_dashboard.py
+
+
+Step 6 — Run the App
+source venv/bin/activate
+python3 aiops_incident_dashboard.py
+
+
+You’ll see:
+
+ New AIOps Incident Detected!
+ * Running on http://0.0.0.0:8080
+
+Step 7 — Open in Browser
+
+Go to: http://<VM-External-IP>:8080
+
+Slack enablement :
+
+Create a Slack App with Incoming Webhook
+
+Go to  https://api.slack.com/apps
+
+Click “Create New App” → From Scratch
+
+App Name: aiops-alerts
+
+Workspace: Select your workspace (e.g., Intern)
+
+Once the app is created:
+
+From the left menu → click “Incoming Webhooks”
+
+Toggle “Activate Incoming Webhooks” → ON
+
+Click “Add New Webhook to Workspace”
+
+Choose your channel (e.g., #all-intern) → Allow
+
+ Slack will now generate a Webhook URL like:
+
+https://hooks.slack.com/services/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
+
+
+Keep this safe — this URL is what your Flask app uses.
+
+Verify the Webhook URL
+
+From your GCP VM or Cloud Shell:
+
+curl -X POST -H 'Content-type: application/json' \
+--data '{"text":"🚨 Test AIOps Alert: Slack integration working successfully!"}' \
+https://hooks.slack.com/services/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
+
+
+ Go to your Slack channel → you should see a test alert message appear.
+
+If not:
+
+Check that the webhook app is installed for that channel.
+
+Ensure your Slack workspace isn’t restricted for app installs (common in company setups).
+
+ Integrate the Webhook into Python Script
+
+In your aiops_incident_dashboard.py, locate this line:
+
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/XXXXXXXXX/YYYYYYYYY/ZZZZZZZZZZZZZZZZ"
+
+
+Replace it with your real Slack webhook URL (from Step 1).
+
+ Run the Application
+
+From your GCP VM:
+
+cd ~/aiops_incident_demo
+source venv/bin/activate
+python3 aiops_incident_dashboard.py
+
+
+You’ll see:
+
+🚨 Ticket created: High latency spike detected...
+ * Running on http://0.0.0.0:8080
+
+View Results
+Platform	What You See
+Flask Dashboard (Port 8080)	Live incident table with “Resolve” button
+Slack Channel (#all-intern)	🚨 Alerts + ✅ Resolve notifications
+Log Console	Prints all alert generation messages
+
+Step 8 — Verify Slack Alerts
+
+Go to your Slack → #all-intern
+ New incidents appear instantly
+Click “Resolve” → green message posts to Slack
+
+
+
+📊 Final Output
+
+GCP VM runs the Flask + AI detector app
+
+Browser Dashboard shows live incidents
+
+Slack Channel (#all-intern) receives incident & resolution messages
+
+
+

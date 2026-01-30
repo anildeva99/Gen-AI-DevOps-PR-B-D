@@ -1,0 +1,18 @@
+Steps executed 
+
+
+1. Launched AWS EC2 (Ubuntu, later upgraded to t3.large).
+2. Installed required tools: git, java, maven, docker, docker-compose, kubectl, minikube, python3, pip3, jq, curl, Ollama.
+3. Verified environment readiness with custom shell checks.
+4. Installed and ran Jenkins using Docker Compose on EC2.
+5. Retrieved Jenkins admin password, configured Jenkins UI.
+6. Generated SSH keys and connected EC2 with GitHub (repo: adinarayanap/genaidevopsdemo).
+7. Created ai_pipeline.sh and ollama_runner.py to auto-generate CI/CD pipeline files via prompts.
+8. Pushed Jenkinsfile, Dockerfile, and K8s manifests to GitHub repo.
+9. Configured Jenkins pipeline job to pull from GitHub repo.
+10. Fixed errors: Maven not found, Docker not found, updated Jenkinsfile accordingly.
+11. Configured GitHub Webhook to auto-trigger Jenkins builds on push.
+12. Validated Ollama model execution with prompts to generate pipeline files.
+13. Monitored backend processes (ps, top, docker, kubectl).
+14. Verified builds, debugged SCM credentials, and integrated Jenkins with GitHub via SSH.
+15. Confirmed pipeline execution (checkout, build, deploy) inside Jenkins.

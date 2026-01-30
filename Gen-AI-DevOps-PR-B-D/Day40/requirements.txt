@@ -1,0 +1,4 @@
+i
+google-cloud-aistudio
+flask
+

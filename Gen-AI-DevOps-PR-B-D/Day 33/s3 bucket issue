@@ -1,0 +1,20 @@
+I have s3 bucket - in aws - some region -  where user configured sftp locally
+ configured mangagement family - s3 can allow downloadn and upload the files form local to s3 and s3 to local 
+
+copy the files from s3 to local - sftp 
+local to s3 --using sftp 
+
+he is not able to copy from s3 to local - 
+error - copy file from remote side failed
+
+permission denied
+Error code 3 
+Error message - from server - US-ASCII - ) Access denied
+
+S3 Policies - IAM - Get object , put object ,list buckets policies - IAM roles 
+
+ARN- 
+
+
+
+

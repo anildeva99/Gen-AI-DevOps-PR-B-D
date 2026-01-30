@@ -1,0 +1,180 @@
+Day34_GitHub_Actions_Deployment/
+    ├── app.py
+    ├── ai_error_summary.py
+    ├── Dockerfile
+    ├── requirements.txt
+    └── .github/
+        └── workflows/
+            └── ci-cd.yml
+ 2. app.py – Simple App (cloud-run deploy)
+python
+Copy code
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "🚀 GitHub Actions + Cloud Run Deployment Successful!"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)
+ 3. ai_error_summary.py – AI Failure Analyzer (Optional)
+python
+Copy code
+import re
+import sys
+
+log = sys.stdin.read()
+
+error_line = re.findall(r"Error:.*", log)
+
+if error_line:
+    print("AI Summary: Failure detected →", error_line[-1])
+else:
+    print("AI Summary: No major errors detected")
+ 4. requirements.txt
+ini
+Copy code
+Flask==3.0.0
+ 5. Dockerfile
+dockerfile
+Copy code
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+
+COPY . .
+
+CMD ["python3", "app.py"]
+6. GitHub Actions – ci-cd.yml
+Create this file:
+
+Gen-AI-DevOps/Day34_GitHub_Actions_Deployment/.github/workflows/ci-cd.yml
+
+yaml
+Copy code
+name: Day34 CI/CD Cloud Run Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  SERVICE_NAME: ai-demo-service
+  REGION: us-central1
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Google Cloud CLI
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true
+
+    - name: Build container image
+      run: |
+        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/day34-demo
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy $SERVICE_NAME \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/day34-demo \
+          --region $REGION \
+          --allow-unauthenticated
+
+    - name: Slack Notification
+      if: always()
+      run: |
+        message="Day34 Deployment Completed: ${{ job.status }}"
+        curl -X POST -H 'Content-type: application/json' \
+        --data "{\"text\":\"$message\"}" \
+        ${{ secrets.SLACK_WEBHOOK_URL }}
+ 7. Add These Secrets in GitHub Repository
+Go to:
+
+GitHub → Repo → Settings → Secrets & Variables → Actions → New Repository Secret
+
+Add:
+
+Secret Name	Description
+GCP_PROJECT_ID	Your GCP Project ID
+GCP_SA_KEY	JSON service account key
+SLACK_WEBHOOK_URL	Your Slack webhook
+
+ 8. Steps to Execute Day34 Deployment
+STEP 1 — Enable APIs
+Run in Cloud Shell:
+
+arduino
+Copy code
+gcloud services enable run.googleapis.com containerregistry.googleapis.com cloudbuild.googleapis.com
+STEP 2 — Create Service Account & Key
+lua
+Copy code
+gcloud iam service-accounts create github-actions-sa
+Give permissions:
+
+powershell
+Copy code
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:github-actions-sa@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/run.admin"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:github-actions-sa@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/storage.admin"
+
+gcloud iam service-accounts keys create key.json \
+ --iam-account=github-actions-sa@$PROJECT_ID.iam.gserviceaccount.com
+Upload key.json into GitHub secret → GCP_SA_KEY
+
+STEP 3 — Push Code to GitHub
+sql
+Copy code
+git add .
+git commit -m "Day34 GitHub Actions Deployment"
+git push
+STEP 4 — Run Pipeline Manually (Optional)
+Go to:
+
+Actions → Day34 CI/CD → Run workflow
+
+STEP 5 — Get Cloud Run URL
+After deployment:
+
+arduino
+Copy code
+gcloud run services list
+9. Architecture Diagram (Simple PNG Style)
+mathematica
+Copy code
+Developer Push Code
+        │
+        ▼
+┌─────────────────────┐
+│ GitHub Actions CI/CD │
+└─────────────────────┘
+        │
+        ├── Build Docker Image (Cloud Build)
+        │
+        ├── Push Image (GCR/Artifact Registry)
+        │
+        └── Deploy → Cloud Run
+                │
+                ▼
+        https://<cloud-run-url>
+
+Slack Notification ←───────────┘

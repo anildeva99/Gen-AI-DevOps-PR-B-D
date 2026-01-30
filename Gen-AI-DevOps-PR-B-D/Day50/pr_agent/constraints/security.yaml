@@ -1,0 +1,22 @@
+rules:
+  - id: SEC-SSH-001
+    title: SSH must not be open to the world
+    severity: BLOCKER
+    enforce: true
+    match:
+      type: file_regex
+      file_glob: "**/*.tf"
+      pattern: "0\\.0\\.0\\.0/0"
+      context_regex: "22"
+    fix: "Restrict SSH CIDR or use IAP/SSM"
+
+  - id: SEC-SECRET-001
+    title: No hardcoded secrets
+    severity: BLOCKER
+    enforce: true
+    match:
+      type: file_regex
+      file_glob: "**/*"
+      pattern: "(AKIA|SECRET_KEY|PASSWORD=)"
+    fix: "Move secrets to Secret Manager or GitHub Secrets"
+

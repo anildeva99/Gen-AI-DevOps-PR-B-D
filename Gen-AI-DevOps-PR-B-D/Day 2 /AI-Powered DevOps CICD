@@ -1,0 +1,8 @@
+Demo - AI-Powered DevOps CI/CD
+
+We are going to generate a Jenkinsfile for a Java-Maven project that:
+1. Pulls code from GitHub
+2. Builds using Maven
+3. Creates a Docker image
+4. Pushes the image to DockerHub
+5. Deploys to Kubernetes
