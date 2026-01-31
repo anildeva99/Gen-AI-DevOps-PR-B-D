@@ -1,4 +1,0 @@
-flask
-google-cloud-aiplatform>=1.49
-vertexai
-

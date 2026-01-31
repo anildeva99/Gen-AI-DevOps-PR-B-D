@@ -1,5 +1,0 @@
-- Always use readiness and liveness probes for production services.
-- Avoid running containers as root. Use securityContext: runAsNonRoot.
-- Define resource requests and limits to ensure stable scheduling.
-- Use ConfigMaps and Secrets for environment variables instead of hardcoding.
-- Include labels and annotations for observability and scaling.
